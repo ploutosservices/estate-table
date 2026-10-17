@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>estate-table example — with a workbook writer and a server</title>
+<link rel="stylesheet" href="estate-table.css">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1rem; background: #ffffff; color: #111827; } .gap { height: 1.5rem; }
+  .expect { margin: 0.5rem 0 0 1rem; padding: 0; } .expect li { margin: 0.125rem 0; } .expect b { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<p>Decorated before the page's announcement: <b id="before">?</b> · after: <b id="after">?</b></p>
+<ol class="expect" aria-label="Expected: data-manual">
+  <li><b>On load</b> nothing is decorated until the page announces its tables (the script element carries <code>data-manual</code>): before 0, after 3.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="excel-box">
+  <div class="estate-table-title">Workbook</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-copy estate-excel" id="excel">
+      <thead><tr><th>Item</th><th class="estate-num">Amount</th><th class="estate-num">Qty</th><th class="estate-id">Code</th></tr></thead>
+      <tbody>
+        <tr><td>Alpha</td><td class="estate-num">1,234.50</td><td class="estate-num">3</td><td>007</td></tr>
+        <tr><td>Beta</td><td class="estate-num">(75.00)</td><td class="estate-num">12</td><td>100</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total</td><td class="estate-num">1,159.50</td><td class="estate-num">15</td><td></td></tr></tfoot>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Workbook">
+  <li><b>On load</b> an Excel button after the copy button in the band's actions, both bare.</li>
+  <li><b>Press it</b> a file <code>workbook.xlsx</code> is written (the band's text names it) holding one sheet, <code>Workbook</code>: the header row in bold, then <code>Alpha</code> · 1234.5 · 3 · <code>007</code> and <code>Beta</code> · -75 · 12 · <code>100</code>, then <code>Total</code> · 1159.5 · 15. Amount is a number with the format <code>#,##0.00</code> (its column shows decimals), Qty a number with <code>#,##0</code>, Code a string (an identity keeps its leading zero); the columns are sized to their content. For 1.2 seconds the button says it was written.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-copy estate-excel" id="excelhref" data-excel-href="../workbook/every-page.xlsx" data-excel-title="Every page, every column">
+  <caption>The page's own workbook — data-excel-href</caption>
+  <thead><tr><th>Item</th><th class="estate-num">Amount</th></tr></thead>
+  <tbody><tr><td>Alpha</td><td class="estate-num">1.00</td></tr></tbody>
+</table>
+<ol class="expect" aria-label="Expected: data-excel-href">
+  <li><b>On load</b> the Excel part in the caption is a link to <code>../workbook/every-page.xlsx</code> whose tooltip reads "Every page, every column"; no workbook writer is needed for it.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table" id="peek">
+  <caption>A card beside the cell — data-peek</caption>
+  <thead><tr><th>Name</th><th>Answered by</th></tr></thead>
+  <tbody>
+    <tr><td data-peek="/peek/alpha">Alpha</td><td>an HTML answer</td></tr>
+    <tr><td data-peek="/peek/beta">Beta</td><td>a plain-text answer</td></tr>
+    <tr><td data-peek="/peek/gamma">Gamma</td><td>a door that refuses (404)</td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: data-peek">
+  <li><b>On load</b> each peek cell carries <code>tabindex="0"</code>.</li>
+  <li><b>Hover or focus Alpha</b> one card, <code>div.estate-table-peek</code>, appears beside the cell holding <code>&lt;b&gt;Alpha&lt;/b&gt; — the first row's record</code> as markup (the server answered <code>text/html</code>). <b>Beta</b> the card reads <code>Beta: a plain answer</code> as text. <b>Gamma</b> the card reads <code>the door answered 404</code>. <b>Leave the cell, scroll, or press Escape</b> the card hides. Each address is fetched once for the page's life.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table" id="peek-any">
+  <caption>A card on any element — data-peek on a header, a span, a div</caption>
+  <thead><tr><th data-peek="/peek/beta">Header</th><th>Where</th></tr></thead>
+  <tbody>
+    <tr><td><span data-peek="/peek/alpha">Alpha</span> in a cell</td><td>a span</td></tr>
+    <tr><td><div data-peek="/peek/gamma">Gamma</div></td><td>a div</td></tr>
+    <tr><td><a href="#peek-any" data-peek="/peek/beta">Beta</a></td><td>a link</td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: data-peek on any element">
+  <li><b>On load</b> the header, the span and the div carry <code>tabindex="0"</code>; the link does not (a keyboard already reaches it).</li>
+  <li><b>Hover or focus the header</b> the card reads <code>Beta: a plain answer</code>; <b>the span</b> it holds <code>&lt;b&gt;Alpha&lt;/b&gt; — the first row's record</code>; <b>the div</b> <code>the door answered 404</code>; <b>the link</b> <code>Beta: a plain answer</code>. Leaving the element hides the card.</li>
+</ol>
+
+<script src="estate-table.js" data-manual></script>
+<script>
+  // The page announces its tables itself: data-manual means the script decorated nothing on load.
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('before').textContent = document.querySelectorAll('table[data-estate-on]').length;
+    document.dispatchEvent(new CustomEvent('estate:tables-added'));
+    document.getElementById('after').textContent = document.querySelectorAll('table[data-estate-on]').length;
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+</body>
+</html>

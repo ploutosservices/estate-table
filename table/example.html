@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>estate-table example</title>
+<link rel="stylesheet" href="estate-table.css">
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1rem; background: #ffffff; color: #111827; } .gap { height: 1.5rem; }
+  /* Expected answers: under each table, what a reader must see after each act. A run is a comparison, not a judgment. */
+  .expect { margin: 0.5rem 0 0 1rem; padding: 0; } .expect li { margin: 0.125rem 0; } .expect b { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="estate-table-box" id="people-box">
+  <div class="estate-table-title">People</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-filter estate-copy" id="people">
+      <thead><tr><th>Name</th><th>Joined</th><th>Phone</th><th class="estate-num">Balance</th><th>Note</th><th class="estate-no-sort"></th></tr></thead>
+      <tbody>
+        <tr><td>Item 10</td><td>2024-03-05</td><td>+44 7700 900 123</td><td class="estate-num" data-raw="1234.5">1,234.50</td><td>chase</td><td>x</td></tr>
+        <tr><td>item 9</td><td>11 May 2011</td><td>+1 (201) 555-0100</td><td class="estate-num">(250.00)</td><td></td><td>x</td></tr>
+        <tr><td>Ärger</td><td>May 1, 2026</td><td>07700 900 395</td><td class="estate-num">$75.00</td><td>citi chase</td><td>x</td></tr>
+        <tr><td>Bose</td><td></td><td>+61 491 570 156</td><td class="estate-num">-1,000.00</td><td>citi</td><td>x</td></tr>
+        <tr class="estate-total"><td>Total</td><td></td><td></td><td class="estate-num">59.50</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: People">
+  <li><b>Opening order</b> Item 10, item 9, Ärger, Bose, Total. The last (unlabelled) header is not clickable.</li>
+  <li><b>Click Name</b> Ärger, Bose, item 9, Item 10 (accents and case ignored; 9 before 10) — Total stays last; <code>aria-sort="ascending"</code>. <b>Again</b> Item 10, item 9, Bose, Ärger. <b>Again</b> the opening order; <code>data-estate-sort=""</code>.</li>
+  <li><b>Click Joined</b> item 9, Item 10, Ärger, Bose (three date forms; the blank sinks). <b>Again</b> Ärger, Item 10, item 9, Bose (the blank still last).</li>
+  <li><b>Click Phone</b> Ärger, item 9, Item 10, Bose (digit strings: 07700… before 1201…, before 4477…, before 6149…).</li>
+  <li><b>Click Balance</b> Bose, item 9, Ärger, Item 10 (by sign: −1,000, (250), $75, 1,234.50).</li>
+  <li><b>Click Note</b> Item 10, Bose, Ärger, item 9 (chase, citi, citi chase; the blank sinks).</li>
+  <li><b>Type "citi"</b> Ärger, Bose; "2 of 4 shown"; the Total row hidden. <b>Type "citi chase"</b> Ärger alone. <b>Clear</b> all five rows back.</li>
+  <li><b>Copy</b> the plain flavour: <code>Name⇥Joined⇥Phone⇥Balance⇥Note⇥</code> then the rows with <code>1234.5</code> (data-raw), <code>-250.00</code>, <code>75.00</code>, <code>-1000.00</code>, and <code>Total⇥⇥⇥59.50⇥⇥</code>; the copy button sits in a made <code>estate-table-actions</code> in the band.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box">
+  <div class="estate-table-title">Grouped, sorted by size</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-sort-abs" id="grouped">
+      <thead><tr><th>Payee</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody>
+        <tr class="estate-row-section"><td colspan="2">January</td></tr>
+        <tr><td>Alpha</td><td class="estate-num">-500</td></tr>
+        <tr><td>Beta</td><td class="estate-num">20</td></tr>
+        <tr class="estate-row-section"><td colspan="2">February</td></tr>
+        <tr><td>Gamma</td><td class="estate-num">300</td></tr>
+        <tr><td>Delta</td><td class="estate-num">-10</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Grouped">
+  <li><b>Click Amount</b> January: Beta, Alpha; February: Delta, Gamma (by size, sign ignored; the bands stay, each group sorted inside itself). <b>Again</b> January: Alpha, Beta; February: Gamma, Delta.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-copy estate-copy-markup estate-copy-body" id="captioned">
+  <caption>Captioned, the footer left out of the copy</caption>
+  <thead><tr><th>Code</th><th class="estate-num">Share</th></tr></thead>
+  <tbody><tr><td>A 1100 0000</td><td class="estate-num">12.5%</td></tr><tr><td>Q3 2026</td><td class="estate-num">USD 672.60</td></tr></tbody>
+  <tfoot><tr><td>Total</td><td class="estate-num">100%</td></tr></tfoot>
+</table>
+<ol class="expect" aria-label="Expected: Captioned">
+  <li><b>Copy</b> (the button is in the caption) the plain flavour: <code>Code⇥Share</code>, <code>A 1100 0000⇥12.5%</code>, <code>Q3 2026⇥USD 672.60</code> — as written, and no Total line (estate-copy-body).</li>
+  <li><b>HTML copy</b> (estate-copy-markup — its <code>&lt;/&gt;</code> button after the copy button) puts this text on the clipboard, nothing else: <code>&lt;table&gt;</code>, <code>&lt;thead&gt;</code>, <code>&lt;tr&gt;&lt;th&gt;Code&lt;/th&gt;&lt;th&gt;Share&lt;/th&gt;&lt;/tr&gt;</code>, <code>&lt;/thead&gt;</code>, <code>&lt;tbody&gt;</code>, <code>&lt;tr&gt;&lt;td&gt;A 1100 0000&lt;/td&gt;&lt;td&gt;12.5%&lt;/td&gt;&lt;/tr&gt;</code>, <code>&lt;tr&gt;&lt;td&gt;Q3 2026&lt;/td&gt;&lt;td&gt;USD 672.60&lt;/td&gt;&lt;/tr&gt;</code>, <code>&lt;/tbody&gt;</code>, <code>&lt;/table&gt;</code> — one per line, indented; no caption, no class, no footer (estate-copy-body).</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-filter estate-keep-foot" id="kept-foot">
+  <caption>The footer kept under a filter — estate-keep-foot</caption>
+  <thead><tr><th>City</th><th class="estate-num">People</th></tr></thead>
+  <tbody><tr><td>Boston</td><td class="estate-num">12</td></tr><tr><td>Austin</td><td class="estate-num">7</td></tr><tr><td>Denver</td><td class="estate-num">5</td></tr></tbody>
+  <tfoot><tr><td>Displaying 3 of 40</td><td></td></tr><tr><td>Total</td><td class="estate-num">40</td></tr></tfoot>
+</table>
+<ol class="expect" aria-label="Expected: Kept footer">
+  <li><b>Type <code>bos</code></b> one row, Boston — and both footer rows, <code>Displaying 3 of 40</code> and <code>Total 40</code>, stay shown (estate-keep-foot). Without the class (the People table above) a footer row with no estate-sum hides while a filter is on.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box estate-copy-box" id="three-box">
+  <div class="estate-table-title">Three tables, one copy — estate-copy-box</div>
+  <table class="estate-table estate-copy estate-copy-markup" id="three-a"><thead><tr><th>A</th></tr></thead><tbody><tr><td>a1</td></tr></tbody></table>
+  <table class="estate-table estate-copy estate-copy-markup" id="three-b"><thead><tr><th>B</th></tr></thead><tbody><tr><td>b1</td></tr></tbody></table>
+  <table class="estate-table estate-copy estate-copy-markup" id="three-c"><thead><tr><th>C</th></tr></thead><tbody><tr><td>c1</td></tr></tbody></table>
+</div>
+<ol class="expect" aria-label="Expected: Three tables, one copy">
+  <li><b>On load</b> one copy button and one HTML copy button, on the band; none beside any of the three tables.</li>
+  <li><b>Copy</b> the plain flavour: <code>A</code>, <code>a1</code>, a blank line, <code>B</code>, <code>b1</code>, a blank line, <code>C</code>, <code>c1</code>. <b>HTML copy</b> the three tables' markup, in that order, a blank line apart.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-format" id="rounding">
+  <caption>Half away from zero on the decimal value — estate-format</caption>
+  <thead><tr><th>Value</th><th class="estate-num" data-decimals="2">At 2</th><th class="estate-num" data-decimals="4">At 4</th></tr></thead>
+  <tbody>
+    <tr><td>0.965</td><td class="estate-num">0.965</td><td class="estate-num">0.12345</td></tr>
+    <tr><td>1.005</td><td class="estate-num">1.005</td><td class="estate-num"></td></tr>
+    <tr><td>-2.675</td><td class="estate-num">-2.675</td><td class="estate-num"></td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: Rounding">
+  <li><b>On load</b> At 2 reads <code>0.97</code>, <code>1.01</code>, <code>-2.68</code>; At 4 reads <code>0.1235</code> — the half rounds away from zero on the value as written, never down on the binary float (Number.toFixed would give 0.96, 1.00, -2.67, 0.1234).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="ledger-box">
+  <div class="estate-table-title">Filter by column</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-numbered estate-sort estate-filter estate-filter-columns estate-copy" id="ledger">
+      <thead><tr><th>Account</th><th>Bank</th><th class="estate-num">Balance</th><th class="estate-text-filter">Code</th></tr></thead>
+      <tbody>
+        <tr><td>Operating</td><td>Chase</td><td class="estate-num">1,250.00</td><td>100</td></tr>
+        <tr><td>Payroll</td><td>Citi</td><td class="estate-num">(300.00)</td><td>200</td></tr>
+        <tr><td>Reserve</td><td>Chase</td><td class="estate-num">5,000.00</td><td>300</td></tr>
+        <tr><td>Petty cash</td><td>Citi</td><td class="estate-num">40.00</td><td>1000</td></tr>
+        <tr class="estate-total"><td>Total</td><td></td><td class="estate-num">5,990.00</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Filter by column">
+  <li><b>On load</b> a row <code>tr.estate-table-filter-row</code> under the headers with four cells; no element on the page wears the old name <code>estate-filter-row</code>; the Code box is a text box (estate-text-filter).</li>
+  <li><b>Balance box "&gt;1000"</b> Operating, Reserve; "2 of 4 shown"; the Balance header underlined (estate-filtered). <b>"1000..5000"</b> the same two. <b>"&lt;=50"</b> Payroll, Petty cash. <b>"=40"</b> Petty cash.</li>
+  <li><b>Bank box "ch"</b> Operating, Reserve (any part of the value). <b>Then the bar "res"</b> Reserve alone (bar and boxes together). <b>Clear both</b> four rows and the Total.</li>
+  <li><b>The bar's toggle</b> hides the row of boxes, then shows it; <b>f</b> with focus on a header does the same; the choice is remembered.</li>
+  <li><b>Row numbers</b> 1–4 in the order shown, the Total unnumbered; a sort or a filter renumbers.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="sparse-box">
+  <div class="estate-table-title">Empty columns dropped</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-filter estate-drop-empty estate-copy" id="sparse">
+      <thead><tr><th>Name</th><th>Fax</th><th></th><th>Note</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Alpha</td><td></td><td><svg width="12" height="12"><circle cx="6" cy="6" r="5"/></svg></td><td></td><td class="estate-num">10</td></tr>
+        <tr><td>Beta</td><td> </td><td><svg width="12" height="12"><circle cx="6" cy="6" r="5"/></svg></td><td>only here</td><td class="estate-num">20</td></tr>
+        <tr class="estate-total"><td colspan="4">Total</td><td class="estate-num">30</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="2">Footer</td><td></td><td>0.00</td><td class="estate-num">30</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Empty columns dropped">
+  <li><b>On load</b> Fax hidden (empty and a lone space are empty); the icon column kept (an icon is content); Note kept (one row fills it); the footer's 0.00 is not evidence. The Total's <code>colspan</code> narrows from 4 to 3 and <code>data-estate-span="4"</code> keeps the original.</li>
+  <li><b>Type "alpha"</b> Fax and Note hidden (re-judged on the rows shown). <b>Clear</b> Note back.</li>
+  <li><b>The table below</b> (a data row spanning two columns) keeps every column.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-drop-empty" id="banded">
+  <thead><tr><th>Name</th><th>Fax</th><th>City</th></tr></thead>
+  <tbody><tr><td colspan="2">Delta spans two columns, so no cell can be pinned to one and the table is left alone</td><td>Pune</td></tr><tr><td>Gamma</td><td></td><td>Delhi</td></tr></tbody>
+</table>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="late-box">
+  <div class="estate-table-title">Rows that arrive later — the table is drawn empty; sort or filter, then load or replace the rows</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-filter estate-filter-columns estate-drop-empty estate-copy" id="late">
+      <thead><tr><th>Name</th><th>Fax</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<p><button type="button" id="late-load">Load rows</button> <button type="button" id="late-replace">Replace rows</button></p>
+<ol class="expect" aria-label="Expected: Rows that arrive later">
+  <li><b>Before rows</b> no filter box, no column boxes, no sortable header.</li>
+  <li><b>Load rows</b> three column boxes and the bar's box appear, the three headers sort; Fax hidden (empty). <b>Click Name</b> Agra, Chennai, Mumbai. <b>Bar "ch"</b> Chennai. <b>Clear.</b></li>
+  <li><b>Replace rows</b> Bhopal, Delhi, Kochi (the sort kept); Fax shown again (Delhi fills it); still three boxes — none built twice.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="bysort-box">
+  <div class="estate-table-title">Sorted by data-sort, not by the text</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort" id="bysort">
+      <thead><tr><th>Name</th><th>When</th><th class="estate-num">Size</th></tr></thead>
+      <tbody>
+        <tr><td>First</td><td data-sort="2026-03-01">a Sunday in March</td><td class="estate-num" data-sort="1258291">1.2 MB</td></tr>
+        <tr><td>Second</td><td data-sort="2025-12-24">Christmas Eve</td><td class="estate-num" data-sort="9000000">9 MB</td></tr>
+        <tr><td>Third</td><td data-sort="2026-10-13">today</td><td class="estate-num" data-sort="512">512 bytes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Sorted by data-sort">
+  <li><b>Click When</b> Second, First, Third (the ISO dates in <code>data-sort</code>, not the words). <b>Click twice more</b>, then <b>click Size</b> Third, First, Second (bytes in <code>data-sort</code>: 512, 1258291, 9000000 — by the text, "1.2 MB" would sort before "512 bytes").</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="sizes-box">
+  <div class="estate-table-title">The sizes follow the page</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table" id="sizes">
+      <thead><tr><th>Cell</th><th>What it wears</th></tr></thead>
+      <tbody>
+        <tr><td>body</td><td>nothing — the page's size</td></tr>
+        <tr><td class="estate-text">estate-text</td><td>the page's size, said outright</td></tr>
+        <tr><td class="estate-sm">estate-sm <span class="estate-sm">(a span.estate-sm inside: its cell's size, not smaller)</span></td><td>the small size</td></tr>
+        <tr><td class="estate-mono">estate-mono</td><td>monospace, the small size</td></tr>
+        <tr><td class="estate-label">estate-label</td><td>the small size, semibold, slate</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Sizes">
+  <li><b>At a page base of 16px</b> a body cell 16px, the header row 16px, the band 14px, an estate-sm cell 14px, the span inside it 14px. <b>At 20px</b> 20 / 20 / 17.5 / 17.5 / 17.5. The table has no size of its own.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="opening-box">
+  <div class="estate-table-title">Opens sorted — data-sort-by, and a shift-click list</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort" id="opening" data-sort-by="2 desc, 1">
+      <thead><tr><th>Name</th><th class="estate-num">Score</th></tr></thead>
+      <tbody>
+        <tr><td>Ann</td><td class="estate-num">30</td></tr>
+        <tr><td>Bob</td><td class="estate-num">10</td></tr>
+        <tr><td>Cal</td><td class="estate-num">30</td></tr>
+        <tr><td>Dee</td><td class="estate-num">20</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Opens sorted">
+  <li><b>On load</b> Ann, Cal, Dee, Bob (Score descending, then Name ascending); Score reads <code>aria-sort="descending"</code> and Name <code>"ascending"</code>; <code>data-estate-sort=""</code> — the opening order.</li>
+  <li><b>Click Score</b> (the column the opening order names first) Bob, Dee, Ann, Cal — the other direction; <code>data-estate-sort="1:asc"</code>. <b>Again</b> the opening order, <code>data-estate-sort=""</code>.</li>
+  <li><b>Click Name</b> Ann, Bob, Cal, Dee. <b>Again</b> Dee, Cal, Bob, Ann. <b>Again</b> the opening order.</li>
+  <li><b>Click Score, then shift-click Name</b> Bob, Dee, Ann, Cal (Score ascending, Name ascending breaking the tie); <code>data-estate-sort="1:asc,0:asc"</code>, both headers marked. <b>Shift-click Name again</b> Bob, Dee, Cal, Ann (Name turned descending). <b>Shift-click Name again</b> Name leaves the list: <code>"1:asc"</code>, ties keep the order they are in. <b>Click Score</b> the opening order.</li>
+  <li><b>From the opening order, shift-click Name</b> Cal, Ann, Dee, Bob — the columns in force are the opening order's, and Name turns descending: <code>data-estate-sort="1:desc,0:desc"</code>. <b>Shift-click Name again</b> Name leaves: <code>"1:desc"</code>. <b>Click Score</b> the opening order.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="typed-box">
+  <div class="estate-table-title">Typed by the author — estate-id, estate-as-text</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-filter-columns estate-copy" id="typed">
+      <thead><tr><th class="estate-id">Code</th><th class="estate-as-text">When</th><th class="estate-as-text">Ref</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>007</td><td>May 1, 2026</td><td>1,250.00</td><td class="estate-num">5</td></tr>
+        <tr><td>100</td><td>11 May 2011</td><td>(300)</td><td class="estate-num">10</td></tr>
+        <tr><td>20</td><td>2 Jan 2030</td><td>12</td><td class="estate-num">7</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Typed">
+  <li><b>Click Code</b> 007, 20, 100 (identities by size, every value digits; as text 100 would come before 20). The Code box is a text box.</li>
+  <li><b>Click When</b> 2 Jan 2030, 11 May 2011, May 1, 2026 (as text, numbers inside read as numbers; as dates it would be 2011, 2026, 2030).</li>
+  <li><b>Copy</b> the plain flavour keeps <code>007</code>, <code>1,250.00</code> and <code>(300)</code> as written (Code and Ref are never unformatted); Amount goes as <code>5</code>, <code>10</code>, <code>7</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="formatted-box">
+  <div class="estate-table-title">Formatted and summed — estate-format, data-decimals, estate-sum</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-format estate-filter estate-copy" id="formatted">
+      <thead><tr><th>Item</th><th class="estate-num" data-decimals="2">Amount</th><th class="estate-num">Rate</th><th class="estate-id">Code</th></tr></thead>
+      <tbody>
+        <tr><td>Alpha</td><td class="estate-num">1234.5</td><td class="estate-num">12.5%</td><td>007</td></tr>
+        <tr><td>Beta</td><td class="estate-num">$75</td><td class="estate-num">3%</td><td>010</td></tr>
+        <tr><td>Gamma</td><td class="estate-num">(250)</td><td class="estate-num">0.125%</td><td>100</td></tr>
+        <tr><td>Delta</td><td class="estate-num">1000000</td><td class="estate-num">2%</td><td>20</td></tr>
+        <tr class="estate-total"><td>Total</td><td class="estate-num estate-sum"></td><td></td><td></td></tr>
+      </tbody>
+      <tfoot><tr class="estate-total"><td>All</td><td class="estate-num estate-sum"></td><td></td><td></td></tr></tfoot>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Formatted">
+  <li><b>On load</b> Amount reads 1,234.50 · $75.00 · -250.00 · 1,000,000.00 (two decimals, a sign kept, the accounting negative a minus), each cell's <code>data-raw</code> holding the text as it arrived (<code>1234.5</code>, <code>$75</code>, <code>(250)</code>, <code>1000000</code>); Rate reads 12.500% · 3.000% · 0.125% · 2.000% (the most decimals any value shows); Code is untouched (007 stays).</li>
+  <li><b>The sums</b> both Total and All read 1,001,059.50 with <code>data-raw="1001059.50"</code>.</li>
+  <li><b>Type "ta"</b> Beta, Delta; both totals stay shown and read 1,000,075.00. <b>Clear</b> 1,001,059.50 again.</li>
+  <li><b>Copy</b> the plain flavour carries each value as it arrived: Amount as <code>1234.5</code>, <code>75</code>, <code>-250</code>, <code>1000000</code>; Rate as <code>12.5%</code>, <code>3%</code> (not the formatted text); Code as <code>007</code>; the Total line <code>1001059.50</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="paged-box">
+  <div class="estate-table-title">Paged — estate-page, data-page-size, data-page-sizes, data-store</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-filter estate-copy estate-page" id="paged" data-page-sizes="3 5" data-page-size="3" data-store="estate-table-check.paged">
+      <thead><tr><th>City</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody>
+        <tr class="estate-row-section"><td colspan="2">North</td></tr>
+        <tr><td>Agra</td><td class="estate-num">1</td></tr>
+        <tr><td>Bhopal</td><td class="estate-num">2</td></tr>
+        <tr><td>Chennai</td><td class="estate-num">3</td></tr>
+        <tr><td>Delhi</td><td class="estate-num">4</td></tr>
+        <tr><td>Erode</td><td class="estate-num">5</td></tr>
+        <tr class="estate-row-section"><td colspan="2">South</td></tr>
+        <tr><td>Fatehpur</td><td class="estate-num">6</td></tr>
+        <tr><td>Goa</td><td class="estate-num">7</td></tr>
+        <tr><td>Hubli</td><td class="estate-num">8</td></tr>
+        <tr><td>Indore</td><td class="estate-num">9</td></tr>
+        <tr class="estate-total"><td>Total</td><td class="estate-num">45</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Paged">
+  <li><b>On load</b> a footer the script made holds the pager: sizes 3 and 5, 3 chosen; "1–3 of 9 · page 1 of 3"; the previous button disabled; <code>data-estate-page="1/3"</code>. Shown: North, Agra, Bhopal, Chennai — the South band and the Total are not on this page.</li>
+  <li><b>Next</b> North, Delhi, Erode, South, Fatehpur, Total (a band is shown on a page where any of its rows is; the Total follows its group). <b>Next</b> South, Goa, Hubli, Indore, Total; the next button disabled. <b>Previous twice</b> page 1 again.</li>
+  <li><b>Click City twice</b> (descending) page 1 shows North, Erode, Delhi, Chennai — the sort first, then the page. <b>Click City</b> again, the opening order.</li>
+  <li><b>Type "o"</b> Bhopal, Erode, Goa — "4 of 9 shown", "1–3 of 4 · page 1 of 2". <b>Copy</b> the plain flavour carries every filtered row across the pages: Bhopal, Erode, Goa, Indore (and the bands they sit under; no Total). <b>Type "zz"</b> "0 rows". <b>Clear.</b></li>
+  <li><b>Choose 5</b> "1–5 of 9 · page 1 of 2"; the browser remembers <code>{"size":5}</code> under <code>estate-table-check.paged</code>. <b>Choose 3</b> again.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="partial-box">
+  <div class="estate-table-title">Part of a larger set — data-total</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-filter estate-page" id="partial" data-total="631" data-page-size="3">
+      <thead><tr><th>City</th><th class="estate-num">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Agra</td><td class="estate-num">1</td></tr>
+        <tr><td>Bhopal</td><td class="estate-num">2</td></tr>
+        <tr><td>Chennai</td><td class="estate-num">3</td></tr>
+        <tr><td>Delhi</td><td class="estate-num">4</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Part of a larger set">
+  <li><b>On load</b> the bar reads "4 loaded of 631"; the pager "1–3 of 4 loaded of 631 · page 1 of 2".</li>
+  <li><b>Type "a"</b> Agra, Bhopal, Chennai; the bar "3 of 4 shown · 4 loaded of 631". <b>Clear.</b></li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-drop-empty" id="kept">
+  <thead><tr><th>Name</th><th class="estate-keep">Fax</th><th>Note</th></tr></thead>
+  <tbody><tr><td>Alpha</td><td></td><td></td></tr><tr><td>Beta</td><td></td><td></td></tr></tbody>
+</table>
+<ol class="expect" aria-label="Expected: Kept">
+  <li><b>On load</b> Note hidden (empty); Fax shown though empty (estate-keep).</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-sort" id="href">
+  <thead><tr><th>Name</th><th>Goes to</th></tr></thead>
+  <tbody>
+    <tr><td class="estate-link" data-href="#href-alpha">Alpha</td><td>#href-alpha</td></tr>
+    <tr><td class="estate-link" data-href="#href-beta">Beta <button type="button" id="href-button">a button of the cell's own</button></td><td>#href-beta</td></tr>
+    <tr><td class="estate-link" data-href="#href-gamma">Gamma</td><td>#href-gamma</td></tr>
+  </tbody>
+</table>
+<p>presses of the cell's own button: <b id="href-presses">0</b></p>
+<ol class="expect" aria-label="Expected: Goes somewhere">
+  <li><b>On load</b> each data-href cell carries <code>tabindex="0"</code>.</li>
+  <li><b>Click Alpha</b> the page's address ends <code>#href-alpha</code>. <b>Click the button in Beta</b> the counter advances and the address does not change. <b>Focus Gamma and press Enter</b> <code>#href-gamma</code>. A Ctrl-click or a middle click opens the address in a new tab (a test that drives the browser sees the new page).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box estate-narrow" id="pinned-box">
+  <div class="estate-table-title">Two pinned columns — estate-pin</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-filter-columns" id="pinned">
+      <thead><tr><th class="estate-pin">Id</th><th class="estate-pin">Name</th><th>One</th><th>Two</th><th>Three</th><th>Four</th></tr></thead>
+      <tbody>
+        <tr><td class="estate-pin">1</td><td class="estate-pin">Alpha</td><td class="estate-nowrap">a long value that does not wrap</td><td class="estate-nowrap">another long value that does not wrap</td><td class="estate-nowrap">a third long value</td><td class="estate-nowrap">a fourth long value</td></tr>
+        <tr><td class="estate-pin">2</td><td class="estate-pin">Beta</td><td class="estate-nowrap">a long value that does not wrap</td><td class="estate-nowrap">another long value that does not wrap</td><td class="estate-nowrap">a third long value</td><td class="estate-nowrap">a fourth long value</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Pinned">
+  <li><b>On load</b> every Name cell — the header, the filter row's box, each row — carries <code>left</code> equal to the Id header's width; the Id cells keep the stylesheet's 0.</li>
+  <li><b>Scroll the box sideways</b> Id and Name stay at the box's left edge, side by side, and the other columns slide under them.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box estate-sticky" id="sticky-box" data-rows="3">
+  <div class="estate-table-title">Three rows then scroll — estate-sticky with data-rows</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table" id="sticky">
+      <thead><tr><th>N</th><th>Word</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>one</td></tr><tr><td>2</td><td>two</td></tr><tr><td>3</td><td>three</td></tr><tr><td>4</td><td>four</td></tr><tr><td>5</td><td>five</td></tr>
+        <tr><td>6</td><td>six</td></tr><tr><td>7</td><td>seven</td></tr><tr><td>8</td><td>eight</td></tr><tr><td>9</td><td>nine</td></tr><tr><td>10</td><td>ten</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Sticky with data-rows">
+  <li><b>On load</b> the box's scroller is at most four rows tall — three rows under the header (132px at a 16px base: a row is 1.5em + 0.5rem + 1px) — and scrolls; scrolled down, the header row stays at the scroller's top.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box estate-medium" id="looks-box">
+  <div class="estate-table-title">The looks — a toolbar, a medium box, a link filling its cell, bare buttons in the band
+    <div class="estate-table-actions"><a href="#looks-box">All payments</a></div>
+  </div>
+  <div class="estate-table-toolbar">a strip the author owns — a legend, a search box of their own</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-copy" id="looks">
+      <thead><tr><th>Payee</th><th>Kind</th></tr></thead>
+      <tbody>
+        <tr><td class="estate-link"><a href="#looks-box" id="looks-link">ACME</a></td><td class="estate-cell-good">all well</td></tr>
+        <tr><td>Beta</td><td class="estate-cell-flag">overdue</td></tr>
+        <tr><td>Gamma</td><td class="estate-cell-join">matched</td></tr>
+        <tr class="estate-tint-warning"><td>Delta</td><td>a hand-picked tint</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<table class="estate-table" id="looks-plain">
+  <thead><tr><th>Payee</th><th class="estate-num">Amount</th></tr></thead>
+  <tbody><tr><td>ACME</td><td class="estate-num">1.00</td></tr></tbody>
+</table>
+<div class="estate-table-note" id="looks-note">a plain line under a table outside any box</div>
+<ol class="expect" aria-label="Expected: The looks">
+  <li><b>The box</b> is at most 42rem wide (672px at a 16px base); <b>the toolbar</b> is a flex strip in the bar's colours between the band and the table.</li>
+  <li><b>The band</b> the author's link keeps its case (no capitals), and the copy button the script put beside it is bare: no background, the band's white — yet at least 24px each way (<code>--estate-table-target</code>), and hover draws a thin ring in the band's colour.</li>
+  <li><b>ACME</b> the link's <code>::after</code> fills the cell (absolute, inset 0), so the whole cell is the click with JavaScript off too.</li>
+  <li><b>The cells</b> all well green, overdue red, matched amber, Delta's row the warning tint (the variables' values).</li>
+  <li><b>The note</b> under the plain table is body text at the page's size, near-black.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-sort estate-filter-columns estate-copy" id="labelled">
+  <thead><tr><th>Name</th><th aria-label="Flag"><svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5"/></svg></th></tr></thead>
+  <tbody>
+    <tr><td>Alpha</td><td data-sort="1"><svg width="12" height="12"><circle cx="6" cy="6" r="5"/></svg></td></tr>
+    <tr><td>Beta</td><td data-sort="0"></td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: Labelled by aria-label">
+  <li><b>On load</b> the icon header sorts (its label is "Flag"); its column box is named Flag. <b>Click it</b> Beta, Alpha (by data-sort: 0, 1).</li>
+  <li><b>Copy</b> the plain flavour's header line is <code>Name⇥Flag</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-sort estate-filter estate-copy" id="controls">
+  <thead><tr><th>Name</th><th>Status</th><th>Done</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Alpha</td><td><select><option>open</option><option selected>closed</option></select></td><td><input type="checkbox" checked></td><td><input type="text" value="first"></td></tr>
+    <tr><td>Beta</td><td><select><option selected>open</option><option>closed</option></select></td><td><input type="checkbox"></td><td><input type="text" value="second"></td></tr>
+    <tr><td>Gamma</td><td><select><option>open</option><option selected>closed</option></select></td><td><input type="checkbox" checked></td><td><input type="text" value=""></td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: Form controls">
+  <li><b>Click Status</b> Alpha, Gamma, Beta (closed, closed, open — a select is what it shows). <b>Click twice more.</b></li>
+  <li><b>Type "open"</b> Beta. <b>Type "✓"</b> Alpha, Gamma (a checked box is ✓). <b>Type "second"</b> Beta (a field is its value). <b>Clear.</b></li>
+  <li><b>Copy</b> the plain flavour: <code>Alpha⇥closed⇥✓⇥first</code>, <code>Beta⇥open⇥⇥second</code>, <code>Gamma⇥closed⇥✓⇥</code>; the HTML flavour holds no form control.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-copy" id="spanned">
+  <thead><tr><th>Group</th><th>Item</th><th class="estate-num">Qty</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="2">Group A</td><td>x</td><td class="estate-num">1</td></tr>
+    <tr><td>y</td><td class="estate-num">2</td></tr>
+    <tr><td>Group B</td><td>z</td><td class="estate-num">3</td></tr>
+  </tbody>
+</table>
+<ol class="expect" aria-label="Expected: Spanned rows">
+  <li><b>Copy</b> the plain flavour: <code>Group A⇥x⇥1</code>, <code>⇥y⇥2</code> (the row under the rowspan gets an empty field in its column), <code>Group B⇥z⇥3</code>; the HTML flavour keeps <code>rowspan="2"</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="rewrite-box">
+  <div class="estate-table-title">Rewritten in place — a cell's text, a header's class</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-filter estate-copy" id="rewrite">
+      <thead><tr><th>Name</th><th class="estate-num">Balance</th></tr></thead>
+      <tbody>
+        <tr><td>Ann</td><td class="estate-num">10</td></tr>
+        <tr><td>Bob</td><td class="estate-num">30</td></tr>
+        <tr><td>Cal</td><td class="estate-num">20</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p><button type="button" id="rewrite-cell">Rewrite Bob's balance to 5</button> <button type="button" id="rewrite-head">Rewrite the Balance header's class</button></p>
+<ol class="expect" aria-label="Expected: Rewritten in place">
+  <li><b>Click Balance, then Rewrite Bob's balance</b> Bob, Ann, Cal — the text node's value changed in place and the sort followed. <b>Type "5"</b> Bob. <b>Copy</b> carries <code>5</code>. <b>Clear.</b></li>
+  <li><b>Rewrite the Balance header's class</b> the page sets the header's <code>class</code> to <code>estate-num</code> alone; the script puts <code>estate-sortable</code> back, and the header still sorts.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-copy" id="source" data-source="#source-full">
+  <caption>Copies the fuller table — data-source</caption>
+  <thead><tr><th>Name</th><th>City</th></tr></thead>
+  <tbody><tr><td>Alpha</td><td>Agra</td></tr><tr><td>Beta</td><td>Bhopal</td></tr></tbody>
+</table>
+<table class="estate-table" id="source-full" hidden>
+  <thead><tr><th>Name</th><th>City</th><th class="estate-num">Amount</th></tr></thead>
+  <tbody><tr><td>Alpha</td><td>Agra</td><td class="estate-num">1,000.00</td></tr><tr><td>Beta</td><td>Bhopal</td><td class="estate-num">2,000.00</td></tr><tr><td>Gamma</td><td>Chennai</td><td class="estate-num">3,000.00</td></tr></tbody>
+</table>
+<ol class="expect" aria-label="Expected: data-source">
+  <li><b>Copy</b> the plain flavour is the hidden table's: <code>Name⇥City⇥Amount</code>, then three rows ending <code>1000.00</code>, <code>2000.00</code>, <code>3000.00</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="noted-wrap">
+<table class="estate-table estate-page" id="noted" data-page-size="2">
+  <thead><tr><th>Name</th></tr></thead>
+  <tbody><tr><td>Alpha</td></tr><tr><td>Beta</td></tr><tr><td>Gamma</td></tr><tr><td>Delta</td></tr></tbody>
+</table>
+</div>
+<ol class="expect" aria-label="Expected: A plain table paged">
+  <li><b>On load</b> the script makes an <code>estate-table-note</code> after the table holding the pager: "1–2 of 4 · page 1 of 2"; Alpha, Beta shown. (A producer that must replace such a table replaces the element wrapping it.)</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="resized-box">
+  <div class="estate-table-title">Resized by the reader — estate-resize</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-sort estate-copy estate-resize" id="resized" data-store="estate-table-check.resized">
+      <thead><tr><th>Name</th><th>Note</th><th class="estate-no-sort"></th></tr></thead>
+      <tbody><tr><td>Alpha</td><td>first</td><td>x</td></tr><tr><td>Beta</td><td>second</td><td>x</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Resized by the reader">
+  <li><b>On load</b> each labelled header holds a handle at its right edge (<code>span.estate-table-resize-handle</code>, the cursor a column-resize arrow); the unlabelled header has none.</li>
+  <li><b>Drag Name's handle 60px to the right</b> the Name header's inline <code>width</code> grows by 60px and the column with it; nothing sorts. <b>Release</b> the width is remembered under <code>estate-table-check.resized</code> as <code>{"widths":{"0":…}}</code>; a page loaded again opens with it.</li>
+  <li><b>Copy</b> the handle travels in neither flavour.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="quiet-box">
+  <div class="estate-table-title">Opens quiet — data-filter-row, remembered under data-store</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-filter estate-filter-columns" id="quiet" data-filter-row="hidden" data-store="estate-table-check.quiet">
+      <thead><tr><th>Name</th><th>City</th></tr></thead>
+      <tbody><tr><td>Alpha</td><td>Agra</td></tr><tr><td>Beta</td><td>Bhopal</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Opens quiet">
+  <li><b>On load</b> the row of boxes is there and <code>hidden</code> (<code>data-filter-row</code>), whatever the browser-wide key <code>estate-table.filter-columns</code> holds — this table reads its own key only; Filter by column's row above is shown.</li>
+  <li><b>The bar's toggle</b> shows the row and writes <code>{"cols":"shown"}</code> under <code>estate-table-check.quiet</code>; Filter by column's row does not move. <b>Again</b> hidden, <code>"cols":"hidden"</code>. <b>Filter by column's toggle</b> changes that table and the browser-wide key, never this one.</li>
+  <li><b>Loaded again</b> opens as remembered, not as <code>data-filter-row</code> says.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box estate-sticky" id="tall-box" data-height="6rem">
+  <div class="estate-table-title">A given height — estate-sticky with data-height</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table" id="tall">
+      <thead><tr><th>N</th><th>Word</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>one</td></tr><tr><td>2</td><td>two</td></tr><tr><td>3</td><td>three</td></tr><tr><td>4</td><td>four</td></tr><tr><td>5</td><td>five</td></tr>
+        <tr><td>6</td><td>six</td></tr><tr><td>7</td><td>seven</td></tr><tr><td>8</td><td>eight</td></tr><tr><td>9</td><td>nine</td></tr><tr><td>10</td><td>ten</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: Sticky with data-height">
+  <li><b>On load</b> the box carries <code>--estate-table-sticky-h: 6rem</code> inline, as given; the scroller is at most 96px tall at a 16px base and scrolls; scrolled down, the header row stays at its top.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-sort estate-copy" id="tipped">
+  <caption>Tooltips drawn the page's way — EstateTable.tooltip</caption>
+  <thead><tr><th>Name</th><th>Note</th></tr></thead>
+  <tbody><tr><td>Alpha</td><td>first</td></tr><tr><td>Beta</td><td>second</td></tr></tbody>
+</table>
+<p><button type="button" id="tipped-replace">Draw tooltips as data-tip</button></p>
+<ol class="expect" aria-label="Expected: Tooltips the page's way">
+  <li><b>On load</b> the Name header's tooltip is its <code>title</code> ("Sort — shift-click to add this column after the ones in force"), and the copy button's is its <code>title</code>.</li>
+  <li><b>Press the button</b> (the page sets <code>EstateTable.tooltip</code> once, to write <code>data-tip</code>), then <b>click Name</b> the header gains <code>data-tip="Sorted ascending — click for descending"</code> and its <code>title</code> is as it was — a tooltip set before the replacement stays a title; every tooltip the script sets after the press, on any table of the page, lands in <code>data-tip</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<table class="estate-table estate-copy estate-excel" id="inert">
+  <caption>Inert without a workbook writer — estate-excel</caption>
+  <thead><tr><th>Name</th></tr></thead>
+  <tbody><tr><td>Alpha</td></tr></tbody>
+</table>
+<ol class="expect" aria-label="Expected: Inert">
+  <li><b>On load</b> a copy button in the caption and no Excel button: this page loads no workbook writer, so <code>estate-excel</code> draws nothing and nothing fails.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="bare-box">
+  <div class="estate-table-title">A record that is not one — data-store holding a bare number</div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-page" id="bare" data-page-sizes="3 5" data-page-size="3" data-store="estate-table-check.bare">
+      <thead><tr><th>City</th></tr></thead>
+      <tbody><tr><td>Agra</td></tr><tr><td>Bhopal</td></tr><tr><td>Chennai</td></tr><tr><td>Delhi</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: A record that is not one">
+  <li><b>On load</b> the page has put the bare number <code>20</code> under <code>estate-table-check.bare</code> (what another table code left under the same key); the pager opens at 3, the opening size — a value that is not a record is read as no record.</li>
+  <li><b>Choose 5</b> "1–4 of 4"; no error in the console; the browser now holds <code>{"size":5}</code> under the key. <b>Choose 3</b> again.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div class="estate-table-box" id="ordered-box">
+  <div class="estate-table-title">New first in the band — estate-new
+    <div class="estate-table-actions"><button type="button" class="estate-new" aria-label="New">New</button><button type="button" id="ordered-open">Open</button></div>
+  </div>
+  <div class="estate-table-scroll">
+    <table class="estate-table estate-copy" id="ordered">
+      <thead><tr><th>Name</th></tr></thead>
+      <tbody><tr><td>Alpha</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<ol class="expect" aria-label="Expected: New first in the band">
+  <li><b>On load</b> the band's actions read, left to right: the author's New button, the script's copy button, the author's Open button — New first, the table's verbs after it, the way to another screen last.</li>
+</ol>
+
+<script>
+  // The bare table's premise: a bare number under its key, as DataTable stored a page size — before the script reads it.
+  try { localStorage.setItem('estate-table-check.bare', '20'); } catch (e) { /* no storage: the table opens at its opening size */ }
+</script>
+<script src="estate-table.js"></script>
+<script>
+  // What an async page does: it writes the body itself and tells the table nothing.
+  (function () {
+    var body = document.querySelector('#late tbody');
+    function rows(list) {
+      body.innerHTML = list.map(function (r) {
+        return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="estate-num">' + r[2] + '</td></tr>';
+      }).join('');
+    }
+    document.getElementById('late-load').addEventListener('click', function () {
+      rows([['Mumbai', '', '300'], ['Agra', '', '100'], ['Chennai', '', '200']]);
+    });
+    document.getElementById('late-replace').addEventListener('click', function () {
+      rows([['Delhi', '011 2345 6789', '50'], ['Bhopal', '', '500'], ['Kochi', '', '5']]);
+    });
+  })();
+  // The rewrite table's two acts: a text node's value changed in place, a header's class rewritten by the page.
+  (function () {
+    document.getElementById('rewrite-cell').addEventListener('click', function () {
+      var rows = document.querySelectorAll('#rewrite tbody tr');
+      for (var i = 0; i < rows.length; i++) if (rows[i].cells[0].textContent === 'Bob') rows[i].cells[1].firstChild.nodeValue = '5';
+    });
+    document.getElementById('rewrite-head').addEventListener('click', function () {
+      document.querySelector('#rewrite thead th:nth-child(2)').className = 'estate-num';
+    });
+    var presses = document.getElementById('href-presses');
+    document.getElementById('href-button').addEventListener('click', function () { presses.textContent = +presses.textContent + 1; });
+    // The page draws tooltips its own way from here on: one replacement, every tooltip the script sets after it.
+    document.getElementById('tipped-replace').addEventListener('click', function () {
+      window.EstateTable.tooltip = function (node, text) { node.setAttribute('data-tip', text); };
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>estate-table example — with a workbook writer and a server, under React</title>
+<link rel="stylesheet" href="estate-table.css">
+<script type="importmap">{ "imports": { "react": "https://esm.sh/react@19.3.0", "react-dom": "https://esm.sh/react-dom@19.3.0", "react-dom/client": "https://esm.sh/react-dom@19.3.0/client" } }</script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1rem; background: #ffffff; color: #111827; } .gap { height: 1.5rem; }
+  .expect { margin: 0.5rem 0 0 1rem; padding: 0; } .expect li { margin: 0.125rem 0; } .expect b { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<p>The workbook writer: <b id="writer">not yet</b></p>
+
+<div id="mount-excel"></div>
+<ol class="expect" aria-label="Expected: Workbook, under React">
+  <li><b>Before the writer arrives</b> the copy button alone in the band's actions. <b>Once it arrives</b> (the page puts ExcelJS on <code>window</code> and dispatches <code>estate:writer</code>) an Excel button after the copy button, both bare.</li>
+  <li><b>Press it</b> a file <code>workbook.xlsx</code> is written (the band's text names it) holding one sheet, <code>Workbook</code>: the header row in bold, then <code>Alpha</code> · 1234.5 · 3 · <code>007</code> and <code>Beta</code> · -75 · 12 · <code>100</code>, then <code>Total</code> · 1159.5 · 15. Amount is a number with the format <code>#,##0.00</code> (its column shows decimals), Qty a number with <code>#,##0</code>, Code a string (an identity keeps its leading zero); the columns are sized to their content. For 1.2 seconds the button says it was written.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-excelhref"></div>
+<ol class="expect" aria-label="Expected: data-excel-href">
+  <li><b>On load</b> the Excel part in the caption is a link to <code>../workbook/every-page.xlsx</code> whose tooltip reads "Every page, every column"; no workbook writer is needed for it.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-peek"></div>
+<ol class="expect" aria-label="Expected: data-peek">
+  <li><b>On load</b> each peek cell carries <code>tabindex="0"</code>.</li>
+  <li><b>Hover or focus Alpha</b> one card, <code>div.estate-table-peek</code>, appears beside the cell holding <code>&lt;b&gt;Alpha&lt;/b&gt; — the first row's record</code> as markup (the server answered <code>text/html</code>). <b>Beta</b> the card reads <code>Beta: a plain answer</code> as text. <b>Gamma</b> the card reads <code>the door answered 404</code>. <b>Leave the cell, scroll, or press Escape</b> the card hides. Each address is fetched once for the page's life.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-effects"></div>
+<p>cell components mounted <b id="mounted">0</b> · unmounted <b id="unmounted">0</b></p>
+<ol class="expect" aria-label="Expected: The press pass, under React">
+  <li><b>On load</b> page 1 of 3 shows two rows; four cell components are mounted for them (two per row), after the reading pass mounted and unmounted the rest.</li>
+  <li><b>Copy</b> the plain flavour carries all six rows (the press pass rendered every filtered row); the page shows the same two rows after it. The press mounts the eight cell components of the four rows off the page and unmounts them again; the counters say whether their effects ran inside the press's task or after it.</li>
+</ol>
+<div style="height: 100vh"></div>
+
+<script type="module">
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { Estate } from './estate-table-react.js';
+  const h = React.createElement;
+  const num = t => h('td', { className: 'estate-num' }, t);
+
+  function mount(id, el) { createRoot(document.getElementById('mount-' + id)).render(h(Estate, null, el)); }
+
+  mount('excel', h('div', { className: 'estate-table-box', id: 'excel-box' },
+    h('div', { className: 'estate-table-title' }, 'Workbook'),
+    h('div', { className: 'estate-table-scroll' },
+      h('table', { className: 'estate-table estate-copy estate-excel', id: 'excel' },
+        h('thead', null, h('tr', null, h('th', null, 'Item'), h('th', { className: 'estate-num' }, 'Amount'), h('th', { className: 'estate-num' }, 'Qty'), h('th', { className: 'estate-id' }, 'Code'))),
+        h('tbody', null,
+          h('tr', { key: 'a' }, h('td', null, 'Alpha'), num('1,234.50'), num('3'), h('td', null, '007')),
+          h('tr', { key: 'b' }, h('td', null, 'Beta'), num('(75.00)'), num('12'), h('td', null, '100'))),
+        h('tfoot', null, h('tr', null, h('td', null, 'Total'), num('1,159.50'), num('15'), h('td', null, '')))))));
+
+  mount('excelhref', h('table', { className: 'estate-table estate-copy estate-excel', id: 'excelhref', 'data-excel-href': '../workbook/every-page.xlsx', 'data-excel-title': 'Every page, every column' },
+    h('caption', null, 'The page\'s own workbook — data-excel-href'),
+    h('thead', null, h('tr', null, h('th', null, 'Item'), h('th', { className: 'estate-num' }, 'Amount'))),
+    h('tbody', null, h('tr', null, h('td', null, 'Alpha'), num('1.00')))));
+
+  mount('peek', h('table', { className: 'estate-table', id: 'peek' },
+    h('caption', null, 'A card beside the cell — data-peek'),
+    h('thead', null, h('tr', null, h('th', null, 'Name'), h('th', null, 'Answered by'))),
+    h('tbody', null,
+      h('tr', { key: 'a' }, h('td', { 'data-peek': '/peek/alpha' }, 'Alpha'), h('td', null, 'an HTML answer')),
+      h('tr', { key: 'b' }, h('td', { 'data-peek': '/peek/beta' }, 'Beta'), h('td', null, 'a plain-text answer')),
+      h('tr', { key: 'g' }, h('td', { 'data-peek': '/peek/gamma' }, 'Gamma'), h('td', null, 'a door that refuses (404)')))));
+
+  // Cell components with effects: what the press pass mounts and unmounts, counted where the page can read it.
+  window.__effects = { mounted: 0, unmounted: 0 };
+  function Counted({ text }) {
+    React.useEffect(() => {
+      window.__effects.mounted++; document.getElementById('mounted').textContent = window.__effects.mounted;
+      return () => { window.__effects.unmounted++; document.getElementById('unmounted').textContent = window.__effects.unmounted; };
+    }, []);
+    return h('span', null, text);
+  }
+  const CITIES = ['Agra', 'Bhopal', 'Chennai', 'Delhi', 'Erode', 'Fatehpur'];
+  mount('effects', h('div', { className: 'estate-table-box', id: 'effects-box' },
+    h('div', { className: 'estate-table-title' }, 'The press pass — cell components with effects'),
+    h('div', { className: 'estate-table-scroll' },
+      h('table', { className: 'estate-table estate-copy estate-page', id: 'effects', 'data-page-size': '2', 'data-page-sizes': '2 6' },
+        h('thead', null, h('tr', null, h('th', null, 'City'), h('th', { className: 'estate-num' }, 'Amount'))),
+        h('tbody', null, CITIES.map((c, i) => h('tr', { key: c }, h('td', null, h(Counted, { text: c })), h('td', { className: 'estate-num' }, h(Counted, { text: String((i + 1) * 10) })))))))));
+
+  // The writer arrives after the tables are drawn, and is announced.
+  setTimeout(() => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+    s.onload = () => { document.getElementById('writer').textContent = 'arrived'; window.dispatchEvent(new CustomEvent('estate:writer')); };
+    document.head.appendChild(s);
+  }, 300);
+</script>
+</body>
+</html>

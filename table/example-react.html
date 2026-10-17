@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>estate-table example — under React</title>
+<link rel="stylesheet" href="estate-table.css">
+<script type="importmap">{ "imports": { "react": "https://esm.sh/react@19.3.0", "react-dom": "https://esm.sh/react-dom@19.3.0", "react-dom/client": "https://esm.sh/react-dom@19.3.0/client" } }</script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 1rem; background: #ffffff; color: #111827; } .gap { height: 1.5rem; }
+  /* Expected answers: under each table, what a reader must see after each act. A run is a comparison, not a judgment. */
+  .expect { margin: 0.5rem 0 0 1rem; padding: 0; } .expect li { margin: 0.125rem 0; } .expect b { font-weight: 600; }
+  .expect-react { border-left: 3px solid #1d4ed8; padding-left: 0.5rem; }
+  .producer { margin: 0 0 1rem; } .producer button { margin-right: 0.25rem; } .producer b { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<p class="producer">
+  <button type="button" id="pause">Pause</button><button type="button" id="resume">Resume</button><button type="button" id="step">Step</button>
+  <button type="button" id="rename">Rename a header (People: Note → Remark)</button><button type="button" id="unmount">Unmount People</button>
+  <span>tick <b id="tick">0</b> · People's act <b id="act">a</b></span>
+</p>
+<ol class="expect expect-react" aria-label="Expected: the page">
+  <li><b>On load</b> every table is decorated once, after React has drawn it (<code>data-estate-on</code> on each); the page records per table whether the script had already decorated it when the producer announced it (<code>window.__estateCheck</code>), and either answer is fine.</li>
+  <li><b>Every 700 ms</b> the tick counter advances. People's producer runs its cycle (below). Every other table's producer replaces its rows with the same data under new keys; after each tick the order and the filter the reader chose hold, and nothing is built twice.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-people"></div>
+<ol class="expect" aria-label="Expected: People">
+  <li><b>Opening order</b> Item 10, item 9, Ärger, Bose, Total. The last (unlabelled) header is not clickable.</li>
+  <li><b>Click Name</b> Ärger, Bose, item 9, Item 10 (accents and case ignored; 9 before 10) — Total stays last; <code>aria-sort="ascending"</code>. <b>Again</b> Item 10, item 9, Bose, Ärger. <b>Again</b> the opening order; <code>data-estate-sort=""</code>.</li>
+  <li><b>Click Joined</b> item 9, Item 10, Ärger, Bose (three date forms; the blank sinks). <b>Again</b> Ärger, Item 10, item 9, Bose (the blank still last).</li>
+  <li><b>Click Phone</b> Ärger, item 9, Item 10, Bose (digit strings: 07700… before 1201…, before 4477…, before 6149…).</li>
+  <li><b>Click Balance</b> Bose, item 9, Ärger, Item 10 (by sign: −1,000, (250), $75, 1,234.50).</li>
+  <li><b>Click Note</b> Item 10, Bose, Ärger, item 9 (chase, citi, citi chase; the blank sinks).</li>
+  <li><b>Type "citi"</b> Ärger, Bose; "2 of 4 shown"; the Total row hidden. <b>Type "citi chase"</b> Ärger alone. <b>Clear</b> all five rows back.</li>
+  <li><b>Copy</b> the plain flavour: <code>Name⇥Joined⇥Phone⇥Balance⇥Note⇥</code> then the rows with <code>1234.5</code> (data-raw), <code>-250.00</code>, <code>75.00</code>, <code>-1000.00</code>, and <code>Total⇥⇥⇥59.50⇥⇥</code>; the copy button sits in a made <code>estate-table-actions</code> in the band.</li>
+</ol>
+<ol class="expect expect-react" aria-label="Expected: People under React">
+  <li><b>Each tick, the producer's act</b> — <b>(a)</b> the same data: nothing moves. <b>(b)</b> Bose's Balance is rewritten in place to <code>-2,000.00</code> (no order changes; the copy carries <code>-2000.00</code>). <b>(c)</b> Echo is appended — by Name between Bose and item 9; by Joined first; "citi" shows Ärger, Bose, Echo, "3 of 5 shown". <b>(d)</b> Echo gone, Bose back to <code>-1,000.00</code>. The Total row reads <code>59.50</code> throughout — the producer's content as written. Under any sort and filter the order and the hidden rows hold after every tick; <code>data-estate-row</code> numbers are unique.</li>
+  <li><b>Rename a header</b> the whole box is replaced: Note reads Remark; the opening order, no header sorted; ONE bar and ONE copy button for People on the page.</li>
+  <li><b>Unmount People</b> the box, its bar and its copy button are gone; the counter keeps counting; no error in the console.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-grouped"></div>
+<ol class="expect" aria-label="Expected: Grouped">
+  <li><b>Click Amount</b> January: Beta, Alpha; February: Delta, Gamma (by size, sign ignored; the bands stay, each group sorted inside itself). <b>Again</b> January: Alpha, Beta; February: Gamma, Delta.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-captioned"></div>
+<ol class="expect" aria-label="Expected: Captioned">
+  <li><b>Copy</b> (the button is in the caption) the plain flavour: <code>Code⇥Share</code>, <code>A 1100 0000⇥12.5%</code>, <code>Q3 2026⇥USD 672.60</code> — as written, and no Total line (estate-copy-body).</li>
+  <li><b>HTML copy</b> (estate-copy-markup — its <code>&lt;/&gt;</code> button after the copy button) puts this text on the clipboard, nothing else: <code>&lt;table&gt;</code>, <code>&lt;thead&gt;</code>, <code>&lt;tr&gt;&lt;th&gt;Code&lt;/th&gt;&lt;th&gt;Share&lt;/th&gt;&lt;/tr&gt;</code>, <code>&lt;/thead&gt;</code>, <code>&lt;tbody&gt;</code>, <code>&lt;tr&gt;&lt;td&gt;A 1100 0000&lt;/td&gt;&lt;td&gt;12.5%&lt;/td&gt;&lt;/tr&gt;</code>, <code>&lt;tr&gt;&lt;td&gt;Q3 2026&lt;/td&gt;&lt;td&gt;USD 672.60&lt;/td&gt;&lt;/tr&gt;</code>, <code>&lt;/tbody&gt;</code>, <code>&lt;/table&gt;</code> — one per line, indented; no caption, no class, no footer (estate-copy-body).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-ledger"></div>
+<ol class="expect" aria-label="Expected: Filter by column">
+  <li><b>On load</b> a row <code>tr.estate-table-filter-row</code> under the headers with four cells; no element on the page wears the old name <code>estate-filter-row</code>; the Code box is a text box (estate-text-filter).</li>
+  <li><b>Balance box "&gt;1000"</b> Operating, Reserve; "2 of 4 shown"; the Balance header underlined (estate-filtered). <b>"1000..5000"</b> the same two. <b>"&lt;=50"</b> Payroll, Petty cash. <b>"=40"</b> Petty cash.</li>
+  <li><b>Bank box "ch"</b> Operating, Reserve (any part of the value). <b>Then the bar "res"</b> Reserve alone (bar and boxes together). <b>Clear both</b> four rows and the Total.</li>
+  <li><b>The bar's toggle</b> hides the row of boxes, then shows it; <b>f</b> with focus on a header does the same; the choice is remembered.</li>
+  <li><b>Row numbers</b> 1–4 in the order shown, the Total unnumbered; a sort or a filter renumbers.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-sparse"></div>
+<ol class="expect" aria-label="Expected: Empty columns dropped">
+  <li><b>On load</b> Fax hidden (empty and a lone space are empty); the icon column kept (an icon is content); Note kept (one row fills it); the footer's 0.00 is not evidence. The Total's <code>colspan</code> narrows from 4 to 3 and <code>data-estate-span="4"</code> keeps the original.</li>
+  <li><b>Type "alpha"</b> Fax and Note hidden (re-judged on the rows shown). <b>Clear</b> Note back.</li>
+  <li><b>The table below</b> (a data row spanning two columns) keeps every column.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-banded"></div>
+
+<div class="gap"></div>
+
+<div id="mount-late"></div>
+<p><button type="button" id="late-load">Load rows</button> <button type="button" id="late-replace">Replace rows</button></p>
+<ol class="expect" aria-label="Expected: Rows that arrive later">
+  <li><b>Before rows</b> no filter box, no column boxes, no sortable header.</li>
+  <li><b>Load rows</b> three column boxes and the bar's box appear, the three headers sort; Fax hidden (empty). <b>Click Name</b> Agra, Chennai, Mumbai. <b>Bar "ch"</b> Chennai. <b>Clear.</b></li>
+  <li><b>Replace rows</b> Bhopal, Delhi, Kochi (the sort kept); Fax shown again (Delhi fills it); still three boxes — none built twice.</li>
+</ol>
+<ol class="expect expect-react" aria-label="Expected: Rows that arrive later, under React">
+  <li><b>Replace rows under Name ascending, then click Name twice more</b> Delhi, Bhopal, Kochi — the producer's order: rows that arrive are numbered in their arrival order before the sort, so the third click returns to it, as on the plain page.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-bysort"></div>
+<ol class="expect" aria-label="Expected: Sorted by data-sort">
+  <li><b>Click When</b> Second, First, Third (the ISO dates in <code>data-sort</code>, not the words). <b>Click twice more</b>, then <b>click Size</b> Third, First, Second (bytes in <code>data-sort</code>: 512, 1258291, 9000000 — by the text, "1.2 MB" would sort before "512 bytes").</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-sizes"></div>
+<ol class="expect" aria-label="Expected: Sizes">
+  <li><b>At a page base of 16px</b> a body cell 16px, the header row 16px, the band 14px, an estate-sm cell 14px, the span inside it 14px. <b>At 20px</b> 20 / 20 / 17.5 / 17.5 / 17.5. The table has no size of its own.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-opening"></div>
+<ol class="expect" aria-label="Expected: Opens sorted">
+  <li><b>On load</b> Ann, Cal, Dee, Bob (Score descending, then Name ascending); Score reads <code>aria-sort="descending"</code> and Name <code>"ascending"</code>; <code>data-estate-sort=""</code> — the opening order.</li>
+  <li><b>Click Score</b> (the column the opening order names first) Bob, Dee, Ann, Cal — the other direction; <code>data-estate-sort="1:asc"</code>. <b>Again</b> the opening order, <code>data-estate-sort=""</code>.</li>
+  <li><b>Click Name</b> Ann, Bob, Cal, Dee. <b>Again</b> Dee, Cal, Bob, Ann. <b>Again</b> the opening order.</li>
+  <li><b>Click Score, then shift-click Name</b> Bob, Dee, Ann, Cal (Score ascending, Name ascending breaking the tie); <code>data-estate-sort="1:asc,0:asc"</code>, both headers marked. <b>Shift-click Name again</b> Bob, Dee, Cal, Ann (Name turned descending). <b>Shift-click Name again</b> Name leaves the list: <code>"1:asc"</code>, ties keep the order they are in. <b>Click Score</b> the opening order.</li>
+  <li><b>From the opening order, shift-click Name</b> Cal, Ann, Dee, Bob — the columns in force are the opening order's, and Name turns descending: <code>data-estate-sort="1:desc,0:desc"</code>. <b>Shift-click Name again</b> Name leaves: <code>"1:desc"</code>. <b>Click Score</b> the opening order.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-typed"></div>
+<ol class="expect" aria-label="Expected: Typed">
+  <li><b>Click Code</b> 007, 20, 100 (identities by size, every value digits; as text 100 would come before 20). The Code box is a text box.</li>
+  <li><b>Click When</b> 2 Jan 2030, 11 May 2011, May 1, 2026 (as text, numbers inside read as numbers; as dates it would be 2011, 2026, 2030).</li>
+  <li><b>Copy</b> the plain flavour keeps <code>007</code>, <code>1,250.00</code> and <code>(300)</code> as written (Code and Ref are never unformatted); Amount goes as <code>5</code>, <code>10</code>, <code>7</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-formatted"></div>
+<ol class="expect" aria-label="Expected: Formatted">
+  <li><b>On load</b> Amount reads 1,234.50 · $75.00 · -250.00 · 1,000,000.00 (two decimals, a sign kept, the accounting negative a minus), each cell's <code>data-raw</code> holding the text as it arrived (<code>1234.5</code>, <code>$75</code>, <code>(250)</code>, <code>1000000</code>); Rate reads 12.500% · 3.000% · 0.125% · 2.000% (the most decimals any value shows); Code is untouched (007 stays).</li>
+  <li><b>The sums</b> both Total and All read 1,001,059.50 with <code>data-raw="1001059.50"</code>.</li>
+  <li><b>Type "ta"</b> Beta, Delta; both totals stay shown and read 1,000,075.00. <b>Clear</b> 1,001,059.50 again.</li>
+  <li><b>Copy</b> the plain flavour carries each value as it arrived: Amount as <code>1234.5</code>, <code>75</code>, <code>-250</code>, <code>1000000</code>; Rate as <code>12.5%</code>, <code>3%</code> (not the formatted text); Code as <code>007</code>; the Total line <code>1001059.50</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-paged"></div>
+<ol class="expect" aria-label="Expected: Paged">
+  <li><b>On load</b> a footer the script made holds the pager: sizes 3 and 5, 3 chosen; "1–3 of 9 · page 1 of 3"; the previous button disabled; <code>data-estate-page="1/3"</code>. Shown: North, Agra, Bhopal, Chennai — the South band and the Total are not on this page.</li>
+  <li><b>Next</b> North, Delhi, Erode, South, Fatehpur, Total (a band is shown on a page where any of its rows is; the Total follows its group). <b>Next</b> South, Goa, Hubli, Indore, Total; the next button disabled. <b>Previous twice</b> page 1 again.</li>
+  <li><b>Click City twice</b> (descending) page 1 shows North, Erode, Delhi, Chennai — the sort first, then the page. <b>Click City</b> again, the opening order.</li>
+  <li><b>Type "o"</b> Bhopal, Erode, Goa — "4 of 9 shown", "1–3 of 4 · page 1 of 2". <b>Copy</b> the plain flavour carries every filtered row across the pages: Bhopal, Erode, Goa, Indore (and the bands they sit under; no Total). <b>Type "zz"</b> "0 rows". <b>Clear.</b></li>
+  <li><b>Choose 5</b> "1–5 of 9 · page 1 of 2"; the browser remembers <code>{"size":5}</code> under <code>estate-table-check.paged</code>. <b>Choose 3</b> again.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-partial"></div>
+<ol class="expect" aria-label="Expected: Part of a larger set">
+  <li><b>On load</b> the bar reads "4 loaded of 631"; the pager "1–3 of 4 loaded of 631 · page 1 of 2".</li>
+  <li><b>Type "a"</b> Agra, Bhopal, Chennai; the bar "3 of 4 shown · 4 loaded of 631". <b>Clear.</b></li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-kept"></div>
+<ol class="expect" aria-label="Expected: Kept">
+  <li><b>On load</b> Note hidden (empty); Fax shown though empty (estate-keep).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-href"></div>
+<p>presses of the cell's own button: <b id="href-presses">0</b></p>
+<ol class="expect" aria-label="Expected: Goes somewhere">
+  <li><b>On load</b> each data-href cell carries <code>tabindex="0"</code>.</li>
+  <li><b>Click Alpha</b> the page's address ends <code>#href-alpha</code>. <b>Click the button in Beta</b> the counter advances and the address does not change. <b>Focus Gamma and press Enter</b> <code>#href-gamma</code>. A Ctrl-click or a middle click opens the address in a new tab (a test that drives the browser sees the new page).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-pinned"></div>
+<ol class="expect" aria-label="Expected: Pinned">
+  <li><b>On load</b> every Name cell — the header, the filter row's box, each row — carries <code>left</code> equal to the Id header's width; the Id cells keep the stylesheet's 0.</li>
+  <li><b>Scroll the box sideways</b> Id and Name stay at the box's left edge, side by side, and the other columns slide under them.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-sticky"></div>
+<ol class="expect" aria-label="Expected: Sticky with data-rows">
+  <li><b>On load</b> the box's scroller is at most four rows tall — three rows under the header (132px at a 16px base: a row is 1.5em + 0.5rem + 1px) — and scrolls; scrolled down, the header row stays at the scroller's top.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-looks"></div>
+<div id="mount-looks-plain"></div>
+<ol class="expect" aria-label="Expected: The looks">
+  <li><b>The box</b> is at most 42rem wide (672px at a 16px base); <b>the toolbar</b> is a flex strip in the bar's colours between the band and the table.</li>
+  <li><b>The band</b> the author's link keeps its case (no capitals), and the copy button the script put beside it is bare: no background, the band's white — yet at least 24px each way (<code>--estate-table-target</code>), and hover draws a thin ring in the band's colour.</li>
+  <li><b>ACME</b> the link's <code>::after</code> fills the cell (absolute, inset 0), so the whole cell is the click with JavaScript off too.</li>
+  <li><b>The cells</b> all well green, overdue red, matched amber, Delta's row the warning tint (the variables' values).</li>
+  <li><b>The note</b> under the plain table is body text at the page's size, near-black.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-labelled"></div>
+<ol class="expect" aria-label="Expected: Labelled by aria-label">
+  <li><b>On load</b> the icon header sorts (its label is "Flag"); its column box is named Flag. <b>Click it</b> Beta, Alpha (by data-sort: 0, 1).</li>
+  <li><b>Copy</b> the plain flavour's header line is <code>Name⇥Flag</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-controls"></div>
+<ol class="expect" aria-label="Expected: Form controls">
+  <li><b>Click Status</b> Alpha, Gamma, Beta (closed, closed, open — a select is what it shows). <b>Click twice more.</b></li>
+  <li><b>Type "open"</b> Beta. <b>Type "✓"</b> Alpha, Gamma (a checked box is ✓). <b>Type "second"</b> Beta (a field is its value). <b>Clear.</b></li>
+  <li><b>Copy</b> the plain flavour: <code>Alpha⇥closed⇥✓⇥first</code>, <code>Beta⇥open⇥⇥second</code>, <code>Gamma⇥closed⇥✓⇥</code>; the HTML flavour holds no form control.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-spanned"></div>
+<ol class="expect" aria-label="Expected: Spanned rows">
+  <li><b>Copy</b> the plain flavour: <code>Group A⇥x⇥1</code>, <code>⇥y⇥2</code> (the row under the rowspan gets an empty field in its column), <code>Group B⇥z⇥3</code>; the HTML flavour keeps <code>rowspan="2"</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-rewrite"></div>
+<p><button type="button" id="rewrite-cell">Rewrite Bob's balance to 5</button> <button type="button" id="rewrite-head">Rewrite the Balance header's class</button></p>
+<ol class="expect" aria-label="Expected: Rewritten in place">
+  <li><b>Click Balance, then Rewrite Bob's balance</b> Bob, Ann, Cal — the text node's value changed in place and the sort followed. <b>Type "5"</b> Bob. <b>Copy</b> carries <code>5</code>. <b>Clear.</b></li>
+  <li><b>Rewrite the Balance header's class</b> the page sets the header's <code>class</code> to <code>estate-num</code> alone; the script puts <code>estate-sortable</code> back, and the header still sorts.</li>
+</ol>
+<ol class="expect expect-react" aria-label="Expected: Rewritten in place, under React">
+  <li><b>Under React</b> both acts are state changes: the balance is a new string for the same keyed row (the text node's value changes), and the header's class is a new <code>className</code> for the same header — the class attribute reads <code>estate-nowrap estate-num estate-sortable</code> after the script restores its own.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-source"></div>
+<div id="mount-source-full"></div>
+<ol class="expect" aria-label="Expected: data-source">
+  <li><b>Copy</b> the plain flavour is the hidden table's: <code>Name⇥City⇥Amount</code>, then three rows ending <code>1000.00</code>, <code>2000.00</code>, <code>3000.00</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-noted"></div>
+<ol class="expect" aria-label="Expected: A plain table paged">
+  <li><b>On load</b> the script makes an <code>estate-table-note</code> after the table holding the pager: "1–2 of 4 · page 1 of 2"; Alpha, Beta shown. (A producer that must replace such a table replaces the element wrapping it.)</li>
+</ol>
+<ol class="expect expect-react" aria-label="Expected: A plain table paged, under React">
+  <li><b>Under React</b> the note the script makes sits beside the table in the root's own element; this table is never replaced or unmounted (a producer that must wraps it, as the ownership rule says).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-resized"></div>
+<ol class="expect" aria-label="Expected: Resized by the reader">
+  <li><b>On load</b> each labelled header holds a handle at its right edge (<code>span.estate-table-resize-handle</code>, the cursor a column-resize arrow); the unlabelled header has none.</li>
+  <li><b>Drag Name's handle 60px to the right</b> the Name header's inline <code>width</code> grows by 60px and the column with it; nothing sorts. <b>Release</b> the width is remembered under <code>estate-table-check.resized</code> as <code>{"widths":{"0":…}}</code>; a page loaded again opens with it.</li>
+  <li><b>Copy</b> the handle travels in neither flavour.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-quiet"></div>
+<ol class="expect" aria-label="Expected: Opens quiet">
+  <li><b>On load</b> the row of boxes is there and <code>hidden</code> (<code>data-filter-row</code>), whatever the browser-wide key <code>estate-table.filter-columns</code> holds — this table reads its own key only; Filter by column's row above is shown.</li>
+  <li><b>The bar's toggle</b> shows the row and writes <code>{"cols":"shown"}</code> under <code>estate-table-check.quiet</code>; Filter by column's row does not move. <b>Again</b> hidden, <code>"cols":"hidden"</code>. <b>Filter by column's toggle</b> changes that table and the browser-wide key, never this one.</li>
+  <li><b>Loaded again</b> opens as remembered, not as <code>data-filter-row</code> says.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-tall"></div>
+<ol class="expect" aria-label="Expected: Sticky with data-height">
+  <li><b>On load</b> the box carries <code>--estate-table-sticky-h: 6rem</code> inline, as given; the scroller is at most 96px tall at a 16px base and scrolls; scrolled down, the header row stays at its top.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-tipped"></div>
+<p><button type="button" id="tipped-replace">Draw tooltips as data-tip</button></p>
+<ol class="expect" aria-label="Expected: Tooltips the page's way">
+  <li><b>On load</b> the Name header's tooltip is its <code>title</code> ("Sort — shift-click to add this column after the ones in force"), and the copy button's is its <code>title</code>.</li>
+  <li><b>Press the button</b> (the page sets <code>EstateTable.tooltip</code> once, to write <code>data-tip</code>), then <b>click Name</b> the header gains <code>data-tip="Sorted ascending — click for descending"</code> and its <code>title</code> is as it was — a tooltip set before the replacement stays a title; every tooltip the script sets after the press, on any table of the page, lands in <code>data-tip</code>.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-inert"></div>
+<ol class="expect" aria-label="Expected: Inert">
+  <li><b>On load</b> a copy button in the caption and no Excel button: this page loads no workbook writer, so <code>estate-excel</code> draws nothing and nothing fails.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-bare"></div>
+<ol class="expect" aria-label="Expected: A record that is not one">
+  <li><b>On load</b> the page has put the bare number <code>20</code> under <code>estate-table-check.bare</code> (what another table code left under the same key); the pager opens at 3, the opening size — a value that is not a record is read as no record.</li>
+  <li><b>Choose 5</b> "1–4 of 4"; no error in the console; the browser now holds <code>{"size":5}</code> under the key. <b>Choose 3</b> again.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-ordered"></div>
+<ol class="expect" aria-label="Expected: New first in the band">
+  <li><b>On load</b> the band's actions read, left to right: the author's New button, the script's copy button, the author's Open button — New first, the table's verbs after it, the way to another screen last.</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-drawn"></div>
+<ol class="expect expect-react" aria-label="Expected: Rows a component draws, under React">
+  <li><b>As loaded</b> (the plain script under React) the rows are sorted like any table's: <b>click Name</b> Alpha, Beta, Gamma.</li>
+  <li><b>With ?impl=react</b> the table is rendered as given — no <code>data-estate-on</code>, no sortable header, Gamma, Alpha, Beta as written — and the console holds one warning naming <code>#drawn</code>: its rows are drawn by a component (the React renderer's one markup condition, estate-table.md §Renderers).</li>
+</ol>
+
+<div class="gap"></div>
+
+<div id="mount-drawnfmt"></div>
+<ol class="expect expect-react" aria-label="Expected: A number a component draws, formatted, under React">
+  <li><b>As loaded</b> (the plain script under React) both Amount cells read <code>1,234.50</code> — the script writes the text node the component drew.</li>
+  <li><b>With ?impl=react</b> Alpha's Amount (plain text) reads <code>1,234.50</code> with <code>data-raw="1234.5"</code>; Beta's (a component draws it) still reads <code>1234.5</code> — the React renderer reads a component's cell and never rewrites it — and carries <code>data-raw="1234.5"</code>, so the copy is the same under both.</li>
+</ol>
+
+<script>
+  // The bare table's premise: a bare number under its key, as DataTable stored a page size — before the script reads it.
+  try { localStorage.setItem('estate-table-check.bare', '20'); } catch (e) { /* no storage: the table opens at its opening size */ }
+</script>
+<script>
+  // ?impl=react: the React renderer owns every table, and the plain script is not loaded at all.
+  window.__estateImpl = /[?&]impl=react(&|$)/.test(location.search) ? 'react' : 'plain';
+  if (window.__estateImpl === 'plain') document.write('<script src="estate-table.js"><\/script>');
+</script>
+<script type="module">
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+  const h = React.createElement;
+  const Estate = window.__estateImpl === 'react' ? (await import('./estate-table-react.js')).Estate : null;
+
+  // ---- the producer's state, shared by every root ------------------------------------------------------------------
+  const ACTS = ['a', 'b', 'c', 'd'];
+  const state = { tick: 0, act: 'a', paused: false, renamed: false, mounted: true, late: null };
+  const listeners = new Set();
+  function publish() {
+    document.getElementById('tick').textContent = state.tick;
+    document.getElementById('act').textContent = state.act;
+    listeners.forEach(fn => fn({ ...state }));
+  }
+  function advance() { state.tick++; state.act = ACTS[state.tick % 4]; publish(); }
+  let timer = setInterval(() => { if (!state.paused) advance(); }, 700);
+  document.getElementById('pause').addEventListener('click', () => { state.paused = true; });
+  document.getElementById('resume').addEventListener('click', () => { state.paused = false; });
+  document.getElementById('step').addEventListener('click', advance);
+  document.getElementById('rename').addEventListener('click', () => { state.renamed = !state.renamed; publish(); });
+  document.getElementById('unmount').addEventListener('click', () => { state.mounted = false; publish(); });
+  document.getElementById('late-load').addEventListener('click', () => { state.late = 'loaded'; publish(); });
+  document.getElementById('late-replace').addEventListener('click', () => { state.late = 'replaced'; publish(); });
+
+  function useProducer() {
+    const [snap, set] = React.useState({ ...state });
+    React.useEffect(() => { listeners.add(set); return () => listeners.delete(set); }, []);
+    return snap;
+  }
+
+  // ---- one table, as the plain page writes it ----------------------------------------------------------------------
+  // A cell is { t: text, c: class, sort, raw, span, th, icon }; a row is { k: key, c: class, cells }. Every cell's child is
+  // ONE string (or the icon), so a rewrite is a text node's change, never a wipe. A row and a cell are functions CALLED
+  // as functions, so each tr and each td is an element in the tree — what the React renderer reads; a custom cell is a
+  // function returning its td.
+  function Cell(c, key) {
+    if (c.custom) return React.cloneElement(c.custom(), { key });
+    const props = { key, className: c.c, 'data-sort': c.sort, 'data-raw': c.raw, colSpan: c.span, rowSpan: c.rows, 'data-href': c.href, 'data-peek': c.peek };
+    const child = c.icon ? h('svg', { width: 12, height: 12 }, h('circle', { cx: 6, cy: 6, r: 5 })) : (c.t == null ? '' : String(c.t));
+    return h(c.th ? 'th' : 'td', props, child);
+  }
+  function Row(r, key) { return h('tr', { key, className: r.c }, r.cells.map((c, i) => Cell(c, i))); }
+  function Rows(rows, gen) { return rows.map(r => Row(r, gen + ':' + r.k)); }
+
+  // Rule 2: the producer announces the table from its mount effect, on the node the root owns; the event bubbles to the
+  // script's listener on document. Whether the script had already seen the table is recorded, not assumed.
+  function Announce({ node, id }) {
+    React.useEffect(() => {
+      window.__estateCheck = window.__estateCheck || {};
+      window.__estateCheck[id] = node.querySelector('table[data-estate-on]') !== null;
+      node.dispatchEvent(new CustomEvent('estate:tables-added', { bubbles: true }));
+    }, []);
+    return null;
+  }
+
+  // spec.attrs are the table's own attributes (data-sort-by, data-page-size, data-store, data-total, data-source …);
+  // spec.box the box's extra classes and spec.boxAttrs its attributes (estate-sticky with data-rows); spec.toolbar,
+  // spec.footer and spec.actions the author's own parts; a header's aria is its aria-label.
+  function Table({ spec, node, heads, rows, gen }) {
+    const table = h('table', { className: spec.cls, id: spec.id, hidden: spec.hidden, ...(spec.attrs || {}) },
+      spec.caption ? h('caption', null, spec.caption) : null,
+      h('thead', null, h('tr', null, heads.map((hd, i) => hd.custom ? React.cloneElement(hd.custom(), { key: i }) : h('th', { key: i, className: hd.c, 'aria-label': hd.aria, 'data-decimals': hd.decimals }, hd.t)))),
+      h('tbody', null, Rows(rows, gen)),
+      spec.foot ? h('tfoot', null, Rows(spec.foot, 'f')) : null,
+      h(Announce, { node, id: spec.id }));
+    // Under ?impl=react the renderer is given the markup — the box with its parts, or the plain table — and owns it.
+    const own = el => Estate ? h(Estate, null, el) : el;
+    if (!spec.title) return own(table);
+    return own(h('div', { className: 'estate-table-box' + (spec.box ? ' ' + spec.box : ''), id: spec.id + '-box', ...(spec.boxAttrs || {}) },
+      h('div', { className: 'estate-table-title' }, spec.title, spec.actions ? h('div', { className: 'estate-table-actions' }, spec.actions) : null),
+      spec.toolbar ? h('div', { className: 'estate-table-toolbar' }, spec.toolbar) : null,
+      h('div', { className: 'estate-table-scroll' }, table),
+      spec.footer ? h('div', { className: 'estate-table-footer' }, spec.footer) : null));
+  }
+
+  // ---- the tables of example.html, as data --------------------------------------------------------------------------
+  const num = (t, extra) => ({ t, c: 'estate-num', ...extra });
+  const PEOPLE = {
+    id: 'people', cls: 'estate-table estate-sort estate-filter estate-copy', title: 'People',
+    heads: [{ t: 'Name' }, { t: 'Joined' }, { t: 'Phone' }, { t: 'Balance', c: 'estate-num' }, { t: 'Note' }, { t: '', c: 'estate-no-sort' }],
+    rows: [
+      { k: 'item10', cells: [{ t: 'Item 10' }, { t: '2024-03-05' }, { t: '+44 7700 900 123' }, num('1,234.50', { raw: '1234.5' }), { t: 'chase' }, { t: 'x' }] },
+      { k: 'item9',  cells: [{ t: 'item 9' }, { t: '11 May 2011' }, { t: '+1 (201) 555-0100' }, num('(250.00)'), { t: '' }, { t: 'x' }] },
+      { k: 'arger',  cells: [{ t: 'Ärger' }, { t: 'May 1, 2026' }, { t: '07700 900 395' }, num('$75.00'), { t: 'citi chase' }, { t: 'x' }] },
+      { k: 'bose',   cells: [{ t: 'Bose' }, { t: '' }, { t: '+61 491 570 156' }, num('-1,000.00'), { t: 'citi' }, { t: 'x' }] },
+      { k: 'total', c: 'estate-total', cells: [{ t: 'Total' }, { t: '' }, { t: '' }, num('59.50'), { t: '' }, { t: '' }] }
+    ]
+  };
+  const ECHO = { k: 'echo', cells: [{ t: 'Echo' }, { t: '2001-01-01' }, { t: '+1 (212) 555-0199' }, num('10.00'), { t: 'citi' }, { t: 'x' }] };
+  // People's producer: act (b) rewrites one cell, (c) appends a row, (d) is (a) again. The Total stays as written.
+  function peopleRows(act) {
+    const rows = PEOPLE.rows.map(r => r.k !== 'bose' || act === 'a' || act === 'd' ? r
+      : { ...r, cells: r.cells.map((c, i) => i === 3 ? num('-2,000.00') : c) });
+    if (act === 'c') rows.splice(4, 0, ECHO);
+    return rows;
+  }
+
+  const GROUPED = {
+    id: 'grouped', cls: 'estate-table estate-sort estate-sort-abs', title: 'Grouped, sorted by size',
+    heads: [{ t: 'Payee' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [
+      { k: 'jan', c: 'estate-row-section', cells: [{ t: 'January', span: 2 }] },
+      { k: 'alpha', cells: [{ t: 'Alpha' }, num('-500')] }, { k: 'beta', cells: [{ t: 'Beta' }, num('20')] },
+      { k: 'feb', c: 'estate-row-section', cells: [{ t: 'February', span: 2 }] },
+      { k: 'gamma', cells: [{ t: 'Gamma' }, num('300')] }, { k: 'delta', cells: [{ t: 'Delta' }, num('-10')] }
+    ]
+  };
+  const CAPTIONED = {
+    id: 'captioned', cls: 'estate-table estate-copy estate-copy-markup estate-copy-body', caption: 'Captioned, the footer left out of the copy',
+    heads: [{ t: 'Code' }, { t: 'Share', c: 'estate-num' }],
+    rows: [{ k: 'a', cells: [{ t: 'A 1100 0000' }, num('12.5%')] }, { k: 'q', cells: [{ t: 'Q3 2026' }, num('USD 672.60')] }],
+    foot: [{ k: 't', cells: [{ t: 'Total' }, num('100%')] }]
+  };
+  const LEDGER = {
+    id: 'ledger', cls: 'estate-table estate-numbered estate-sort estate-filter estate-filter-columns estate-copy', title: 'Filter by column',
+    heads: [{ t: 'Account' }, { t: 'Bank' }, { t: 'Balance', c: 'estate-num' }, { t: 'Code', c: 'estate-text-filter' }],
+    rows: [
+      { k: 'op', cells: [{ t: 'Operating' }, { t: 'Chase' }, num('1,250.00'), { t: '100' }] },
+      { k: 'pay', cells: [{ t: 'Payroll' }, { t: 'Citi' }, num('(300.00)'), { t: '200' }] },
+      { k: 'res', cells: [{ t: 'Reserve' }, { t: 'Chase' }, num('5,000.00'), { t: '300' }] },
+      { k: 'petty', cells: [{ t: 'Petty cash' }, { t: 'Citi' }, num('40.00'), { t: '1000' }] },
+      { k: 'total', c: 'estate-total', cells: [{ t: 'Total' }, { t: '' }, num('5,990.00'), { t: '' }] }
+    ]
+  };
+  const SPARSE = {
+    id: 'sparse', cls: 'estate-table estate-filter estate-drop-empty estate-copy', title: 'Empty columns dropped',
+    heads: [{ t: 'Name' }, { t: 'Fax' }, { t: '' }, { t: 'Note' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [
+      { k: 'alpha', cells: [{ t: 'Alpha' }, { t: '' }, { icon: true }, { t: '' }, num('10')] },
+      { k: 'beta', cells: [{ t: 'Beta' }, { t: ' ' }, { icon: true }, { t: 'only here' }, num('20')] },
+      { k: 'total', c: 'estate-total', cells: [{ t: 'Total', span: 4 }, num('30')] }
+    ],
+    foot: [{ k: 'f', cells: [{ t: 'Footer', span: 2 }, { t: '' }, { t: '0.00' }, num('30')] }]
+  };
+  const BANDED = {
+    id: 'banded', cls: 'estate-table estate-drop-empty',
+    heads: [{ t: 'Name' }, { t: 'Fax' }, { t: 'City' }],
+    rows: [
+      { k: 'delta', cells: [{ t: 'Delta spans two columns, so no cell can be pinned to one and the table is left alone', span: 2 }, { t: 'Pune' }] },
+      { k: 'gamma', cells: [{ t: 'Gamma' }, { t: '' }, { t: 'Delhi' }] }
+    ]
+  };
+  const LATE = {
+    id: 'late', cls: 'estate-table estate-sort estate-filter estate-filter-columns estate-drop-empty estate-copy',
+    title: 'Rows that arrive later — the table is drawn empty; sort or filter, then load or replace the rows',
+    heads: [{ t: 'Name' }, { t: 'Fax' }, { t: 'Amount', c: 'estate-num' }], rows: []
+  };
+  const LATE_ROWS = {
+    loaded: [['Mumbai', '', '300'], ['Agra', '', '100'], ['Chennai', '', '200']],
+    replaced: [['Delhi', '011 2345 6789', '50'], ['Bhopal', '', '500'], ['Kochi', '', '5']]
+  };
+  const lateRows = which => which ? LATE_ROWS[which].map(r => ({ k: r[0], cells: [{ t: r[0] }, { t: r[1] }, num(r[2])] })) : [];
+  const BYSORT = {
+    id: 'bysort', cls: 'estate-table estate-sort', title: 'Sorted by data-sort, not by the text',
+    heads: [{ t: 'Name' }, { t: 'When' }, { t: 'Size', c: 'estate-num' }],
+    rows: [
+      { k: 'first', cells: [{ t: 'First' }, { t: 'a Sunday in March', sort: '2026-03-01' }, num('1.2 MB', { sort: '1258291' })] },
+      { k: 'second', cells: [{ t: 'Second' }, { t: 'Christmas Eve', sort: '2025-12-24' }, num('9 MB', { sort: '9000000' })] },
+      { k: 'third', cells: [{ t: 'Third' }, { t: 'today', sort: '2026-10-13' }, num('512 bytes', { sort: '512' })] }
+    ]
+  };
+  // The one cell with an inner span (the sizes table's estate-sm) is drawn by its own component.
+  const SmCell = () => h('td', { className: 'estate-sm' }, 'estate-sm ', h('span', { className: 'estate-sm' }, '(a span.estate-sm inside: its cell\'s size, not smaller)'));
+  const SIZES = {
+    id: 'sizes', cls: 'estate-table', title: 'The sizes follow the page',
+    heads: [{ t: 'Cell' }, { t: 'What it wears' }],
+    rows: [
+      { k: 'body', cells: [{ t: 'body' }, { t: 'nothing — the page\'s size' }] },
+      { k: 'text', cells: [{ t: 'estate-text', c: 'estate-text' }, { t: 'the page\'s size, said outright' }] },
+      { k: 'sm', cells: [{ custom: SmCell }, { t: 'the small size' }] },
+      { k: 'mono', cells: [{ t: 'estate-mono', c: 'estate-mono' }, { t: 'monospace, the small size' }] },
+      { k: 'label', cells: [{ t: 'estate-label', c: 'estate-label' }, { t: 'the small size, semibold, slate' }] }
+    ]
+  };
+  // ---- step 3's tables, as data ---------------------------------------------------------------------------------------
+  const OPENING = {
+    id: 'opening', cls: 'estate-table estate-sort', title: 'Opens sorted — data-sort-by, and a shift-click list', attrs: { 'data-sort-by': '2 desc, 1' },
+    heads: [{ t: 'Name' }, { t: 'Score', c: 'estate-num' }],
+    rows: [{ k: 'ann', cells: [{ t: 'Ann' }, num('30')] }, { k: 'bob', cells: [{ t: 'Bob' }, num('10')] }, { k: 'cal', cells: [{ t: 'Cal' }, num('30')] }, { k: 'dee', cells: [{ t: 'Dee' }, num('20')] }]
+  };
+  const TYPED = {
+    id: 'typed', cls: 'estate-table estate-sort estate-filter-columns estate-copy', title: 'Typed by the author — estate-id, estate-as-text',
+    heads: [{ t: 'Code', c: 'estate-id' }, { t: 'When', c: 'estate-as-text' }, { t: 'Ref', c: 'estate-as-text' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [
+      { k: '007', cells: [{ t: '007' }, { t: 'May 1, 2026' }, { t: '1,250.00' }, num('5')] },
+      { k: '100', cells: [{ t: '100' }, { t: '11 May 2011' }, { t: '(300)' }, num('10')] },
+      { k: '20', cells: [{ t: '20' }, { t: '2 Jan 2030' }, { t: '12' }, num('7')] }
+    ]
+  };
+  const FORMATTED = {
+    id: 'formatted', cls: 'estate-table estate-format estate-filter estate-copy', title: 'Formatted and summed — estate-format, data-decimals, estate-sum',
+    heads: [{ t: 'Item' }, { t: 'Amount', c: 'estate-num', decimals: '2' }, { t: 'Rate', c: 'estate-num' }, { t: 'Code', c: 'estate-id' }],
+    rows: [
+      { k: 'alpha', cells: [{ t: 'Alpha' }, num('1234.5'), num('12.5%'), { t: '007' }] },
+      { k: 'beta', cells: [{ t: 'Beta' }, num('$75'), num('3%'), { t: '010' }] },
+      { k: 'gamma', cells: [{ t: 'Gamma' }, num('(250)'), num('0.125%'), { t: '100' }] },
+      { k: 'delta', cells: [{ t: 'Delta' }, num('1000000'), num('2%'), { t: '20' }] },
+      { k: 'total', c: 'estate-total', cells: [{ t: 'Total' }, { t: '', c: 'estate-num estate-sum' }, { t: '' }, { t: '' }] }
+    ],
+    foot: [{ k: 'all', c: 'estate-total', cells: [{ t: 'All' }, { t: '', c: 'estate-num estate-sum' }, { t: '' }, { t: '' }] }]
+  };
+  const PAGED = {
+    id: 'paged', cls: 'estate-table estate-sort estate-filter estate-copy estate-page', title: 'Paged — estate-page, data-page-size, data-page-sizes, data-store',
+    attrs: { 'data-page-sizes': '3 5', 'data-page-size': '3', 'data-store': 'estate-table-check.paged' },
+    heads: [{ t: 'City' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [
+      { k: 'north', c: 'estate-row-section', cells: [{ t: 'North', span: 2 }] },
+      ...[['Agra', 1], ['Bhopal', 2], ['Chennai', 3], ['Delhi', 4], ['Erode', 5]].map(r => ({ k: r[0], cells: [{ t: r[0] }, num(String(r[1]))] })),
+      { k: 'south', c: 'estate-row-section', cells: [{ t: 'South', span: 2 }] },
+      ...[['Fatehpur', 6], ['Goa', 7], ['Hubli', 8], ['Indore', 9]].map(r => ({ k: r[0], cells: [{ t: r[0] }, num(String(r[1]))] })),
+      { k: 'total', c: 'estate-total', cells: [{ t: 'Total' }, num('45')] }
+    ]
+  };
+  const PARTIAL = {
+    id: 'partial', cls: 'estate-table estate-filter estate-page', title: 'Part of a larger set — data-total', attrs: { 'data-total': '631', 'data-page-size': '3' },
+    heads: [{ t: 'City' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [['Agra', 1], ['Bhopal', 2], ['Chennai', 3], ['Delhi', 4]].map(r => ({ k: r[0], cells: [{ t: r[0] }, num(String(r[1]))] }))
+  };
+  const KEPT = {
+    id: 'kept', cls: 'estate-table estate-drop-empty',
+    heads: [{ t: 'Name' }, { t: 'Fax', c: 'estate-keep' }, { t: 'Note' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: '' }, { t: '' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: '' }, { t: '' }] }]
+  };
+  // The cell with a button of its own: the button is the cell's, and its press is counted outside the table.
+  const BetaCell = () => h('td', { className: 'estate-link', 'data-href': '#href-beta' }, 'Beta ', h('button', { type: 'button', id: 'href-button', onClick: () => { const p = document.getElementById('href-presses'); p.textContent = +p.textContent + 1; } }, 'a button of the cell\'s own'));
+  const HREF = {
+    id: 'href', cls: 'estate-table estate-sort',
+    heads: [{ t: 'Name' }, { t: 'Goes to' }],
+    rows: [
+      { k: 'alpha', cells: [{ t: 'Alpha', c: 'estate-link', href: '#href-alpha' }, { t: '#href-alpha' }] },
+      { k: 'beta', cells: [{ custom: BetaCell }, { t: '#href-beta' }] },
+      { k: 'gamma', cells: [{ t: 'Gamma', c: 'estate-link', href: '#href-gamma' }, { t: '#href-gamma' }] }
+    ]
+  };
+  const wide = ['a long value that does not wrap', 'another long value that does not wrap', 'a third long value', 'a fourth long value'].map(t => ({ t, c: 'estate-nowrap' }));
+  const PINNED = {
+    id: 'pinned', cls: 'estate-table estate-filter-columns', title: 'Two pinned columns — estate-pin', box: 'estate-narrow',
+    heads: [{ t: 'Id', c: 'estate-pin' }, { t: 'Name', c: 'estate-pin' }, { t: 'One' }, { t: 'Two' }, { t: 'Three' }, { t: 'Four' }],
+    rows: [{ k: '1', cells: [{ t: '1', c: 'estate-pin' }, { t: 'Alpha', c: 'estate-pin' }, ...wide] }, { k: '2', cells: [{ t: '2', c: 'estate-pin' }, { t: 'Beta', c: 'estate-pin' }, ...wide] }]
+  };
+  const STICKY = {
+    id: 'sticky', cls: 'estate-table', title: 'Three rows then scroll — estate-sticky with data-rows', box: 'estate-sticky', boxAttrs: { 'data-rows': '3' },
+    heads: [{ t: 'N' }, { t: 'Word' }],
+    rows: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'].map((w, i) => ({ k: w, cells: [{ t: String(i + 1) }, { t: w }] }))
+  };
+  const LinkCell = () => h('td', { className: 'estate-link' }, h('a', { href: '#looks-box', id: 'looks-link' }, 'ACME'));
+  const LOOKS = {
+    id: 'looks', cls: 'estate-table estate-copy', title: 'The looks — a toolbar, a medium box, a link filling its cell, bare buttons in the band', box: 'estate-medium',
+    actions: h('a', { href: '#looks-box' }, 'All payments'), toolbar: 'a strip the author owns — a legend, a search box of their own',
+    heads: [{ t: 'Payee' }, { t: 'Kind' }],
+    rows: [
+      { k: 'acme', cells: [{ custom: LinkCell }, { t: 'all well', c: 'estate-cell-good' }] },
+      { k: 'beta', cells: [{ t: 'Beta' }, { t: 'overdue', c: 'estate-cell-flag' }] },
+      { k: 'gamma', cells: [{ t: 'Gamma' }, { t: 'matched', c: 'estate-cell-join' }] },
+      { k: 'delta', c: 'estate-tint-warning', cells: [{ t: 'Delta' }, { t: 'a hand-picked tint' }] }
+    ]
+  };
+  const LOOKS_PLAIN = { id: 'looks-plain', cls: 'estate-table', heads: [{ t: 'Payee' }, { t: 'Amount', c: 'estate-num' }], rows: [{ k: 'acme', cells: [{ t: 'ACME' }, num('1.00')] }] };
+  const IconHead = () => h('th', { 'aria-label': 'Flag' }, h('svg', { width: 12, height: 12, 'aria-hidden': 'true' }, h('circle', { cx: 6, cy: 6, r: 5 })));
+  const LABELLED = {
+    id: 'labelled', cls: 'estate-table estate-sort estate-filter-columns estate-copy',
+    heads: [{ t: 'Name' }, { custom: IconHead }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { icon: true, sort: '1' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: '', sort: '0' }] }]
+  };
+  // Uncontrolled controls, so the script reads what each one shows; replaced with their rows each tick.
+  const Sel = v => () => h('td', null, h('select', { defaultValue: v }, h('option', { value: 'open' }, 'open'), h('option', { value: 'closed' }, 'closed')));
+  const Box = on => () => h('td', null, h('input', { type: 'checkbox', defaultChecked: on }));
+  const Field = v => () => h('td', null, h('input', { type: 'text', defaultValue: v }));
+  const CONTROLS = {
+    id: 'controls', cls: 'estate-table estate-sort estate-filter estate-copy',
+    heads: [{ t: 'Name' }, { t: 'Status' }, { t: 'Done' }, { t: 'Note' }],
+    rows: [
+      { k: 'alpha', cells: [{ t: 'Alpha' }, { custom: Sel('closed') }, { custom: Box(true) }, { custom: Field('first') }] },
+      { k: 'beta', cells: [{ t: 'Beta' }, { custom: Sel('open') }, { custom: Box(false) }, { custom: Field('second') }] },
+      { k: 'gamma', cells: [{ t: 'Gamma' }, { custom: Sel('closed') }, { custom: Box(true) }, { custom: Field('') }] }
+    ]
+  };
+  const SPANNED = {
+    id: 'spanned', cls: 'estate-table estate-copy',
+    heads: [{ t: 'Group' }, { t: 'Item' }, { t: 'Qty', c: 'estate-num' }],
+    rows: [{ k: 'ax', cells: [{ t: 'Group A', rows: 2 }, { t: 'x' }, num('1')] }, { k: 'ay', cells: [{ t: 'y' }, num('2')] }, { k: 'bz', cells: [{ t: 'Group B' }, { t: 'z' }, num('3')] }]
+  };
+  const REWRITE = {
+    id: 'rewrite', cls: 'estate-table estate-sort estate-filter estate-copy', title: 'Rewritten in place — a cell\'s text, a header\'s class',
+    heads: [{ t: 'Name' }, { t: 'Balance', c: 'estate-num' }],
+    rows: [{ k: 'ann', cells: [{ t: 'Ann' }, num('10')] }, { k: 'bob', cells: [{ t: 'Bob' }, num('30')] }, { k: 'cal', cells: [{ t: 'Cal' }, num('20')] }]
+  };
+  const SOURCE = {
+    id: 'source', cls: 'estate-table estate-copy', caption: 'Copies the fuller table — data-source', attrs: { 'data-source': '#source-full' },
+    heads: [{ t: 'Name' }, { t: 'City' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: 'Agra' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: 'Bhopal' }] }]
+  };
+  const SOURCE_FULL = {
+    id: 'source-full', cls: 'estate-table', hidden: true,
+    heads: [{ t: 'Name' }, { t: 'City' }, { t: 'Amount', c: 'estate-num' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: 'Agra' }, num('1,000.00')] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: 'Bhopal' }, num('2,000.00')] }, { k: 'gamma', cells: [{ t: 'Gamma' }, { t: 'Chennai' }, num('3,000.00')] }]
+  };
+  const NOTED = {
+    id: 'noted', cls: 'estate-table estate-page', attrs: { 'data-page-size': '2' },
+    heads: [{ t: 'Name' }], rows: ['Alpha', 'Beta', 'Gamma', 'Delta'].map(n => ({ k: n, cells: [{ t: n }] }))
+  };
+  const RESIZED = {
+    id: 'resized', cls: 'estate-table estate-sort estate-copy estate-resize', title: 'Resized by the reader — estate-resize', attrs: { 'data-store': 'estate-table-check.resized' },
+    heads: [{ t: 'Name' }, { t: 'Note' }, { t: '', c: 'estate-no-sort' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: 'first' }, { t: 'x' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: 'second' }, { t: 'x' }] }]
+  };
+  const INERT = { id: 'inert', cls: 'estate-table estate-copy estate-excel', caption: 'Inert without a workbook writer — estate-excel', heads: [{ t: 'Name' }], rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }] }] };
+  const QUIET = {
+    id: 'quiet', cls: 'estate-table estate-filter estate-filter-columns', title: 'Opens quiet — data-filter-row, remembered under data-store',
+    attrs: { 'data-filter-row': 'hidden', 'data-store': 'estate-table-check.quiet' },
+    heads: [{ t: 'Name' }, { t: 'City' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: 'Agra' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: 'Bhopal' }] }]
+  };
+  const TALL = {
+    id: 'tall', cls: 'estate-table', title: 'A given height — estate-sticky with data-height', box: 'estate-sticky', boxAttrs: { 'data-height': '6rem' },
+    heads: [{ t: 'N' }, { t: 'Word' }],
+    rows: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'].map((w, i) => ({ k: w, cells: [{ t: String(i + 1) }, { t: w }] }))
+  };
+  const TIPPED = {
+    id: 'tipped', cls: 'estate-table estate-sort estate-copy', caption: 'Tooltips drawn the page\'s way — EstateTable.tooltip',
+    heads: [{ t: 'Name' }, { t: 'Note' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, { t: 'first' }] }, { k: 'beta', cells: [{ t: 'Beta' }, { t: 'second' }] }]
+  };
+  const BARE = {
+    id: 'bare', cls: 'estate-table estate-page', title: 'A record that is not one — data-store holding a bare number',
+    attrs: { 'data-page-sizes': '3 5', 'data-page-size': '3', 'data-store': 'estate-table-check.bare' },
+    heads: [{ t: 'City' }],
+    rows: ['Agra', 'Bhopal', 'Chennai', 'Delhi'].map(c => ({ k: c, cells: [{ t: c }] }))
+  };
+  const ORDERED = {
+    id: 'ordered', cls: 'estate-table estate-copy', title: 'New first in the band — estate-new',
+    actions: [h('button', { key: 'new', type: 'button', className: 'estate-new', 'aria-label': 'New' }, 'New'), h('button', { key: 'open', type: 'button', id: 'ordered-open' }, 'Open')],
+    heads: [{ t: 'Name' }], rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }] }]
+  };
+  // A table whose rows a COMPONENT draws: a row component mounted as a component, the one shape the React renderer
+  // cannot read (it can neither order nor leave out what another component draws).
+  function DrawnRow({ name }) { return h('tr', null, h('td', null, name)); }
+  const DRAWN = { id: 'drawn', cls: 'estate-table estate-sort', title: 'Rows a component draws — the React renderer\'s markup condition' };
+  function DrawnTable() {
+    return (Estate ? (el => h(Estate, null, el)) : (el => el))(h('div', { className: 'estate-table-box', id: 'drawn-box' },
+      h('div', { className: 'estate-table-title' }, DRAWN.title),
+      h('div', { className: 'estate-table-scroll' },
+        h('table', { className: DRAWN.cls, id: DRAWN.id },
+          h('thead', null, h('tr', null, h('th', null, 'Name'))),
+          h('tbody', null, ['Gamma', 'Alpha', 'Beta'].map(n => h(DrawnRow, { key: n, name: n }))),
+          h(Announce, { node: document.getElementById('mount-drawn'), id: DRAWN.id })))));
+  }
+
+  // A number a component draws: the React renderer reads it and writes data-raw, never the component's text.
+  function Drawn({ v }) { return h('span', null, v); }
+  const DRAWNFMT = {
+    id: 'drawnfmt', cls: 'estate-table estate-format estate-copy', caption: 'A number a component draws — estate-format',
+    heads: [{ t: 'Item' }, { t: 'Amount', c: 'estate-num', decimals: '2' }],
+    rows: [{ k: 'alpha', cells: [{ t: 'Alpha' }, num('1234.5')] }, { k: 'beta', cells: [{ t: 'Beta' }, { custom: () => h('td', { className: 'estate-num' }, h(Drawn, { v: '1234.5' })) }] }]
+  };
+
+  // The page draws tooltips its own way from here on: one replacement, every tooltip the script sets after it.
+  document.getElementById('tipped-replace').addEventListener('click', () => {
+    const tip = (node, text) => { node.setAttribute('data-tip', text); };
+    if (window.EstateTable) window.EstateTable.tooltip = tip;
+    if (Estate) Estate.tooltip = tip;
+  });
+
+  // ---- the roots: one per table box, each with its own producer ----------------------------------------------------
+  function mount(spec, render) {
+    const node = document.getElementById('mount-' + spec.id);
+    createRoot(node).render(h(function Root() { return render(useProducer(), node); }));
+  }
+  mount(PEOPLE, (s, node) => {
+    if (!s.mounted) return null;
+    const heads = s.renamed ? PEOPLE.heads.map((hd, i) => i === 4 ? { t: 'Remark' } : hd) : PEOPLE.heads;
+    // Rule 3: a header changes → the WHOLE box is replaced (the key), and the new one announces itself.
+    return h(Table, { key: s.renamed ? 'renamed' : 'named', spec: PEOPLE, node, heads, rows: peopleRows(s.act), gen: 'p' });
+  });
+  // Every other producer replaces its rows each tick: the same data under new keys (gen = the tick).
+  for (const spec of [GROUPED, CAPTIONED, LEDGER, SPARSE, BANDED, BYSORT]) {
+    mount(spec, (s, node) => h(Table, { spec, node, heads: spec.heads, rows: spec.rows, gen: s.tick }));
+  }
+  mount(LATE, (s, node) => h(Table, { spec: LATE, node, heads: LATE.heads, rows: lateRows(s.late), gen: s.tick }));
+  mount(SIZES, (s, node) => h(Table, { spec: SIZES, node, heads: SIZES.heads, rows: SIZES.rows, gen: s.tick }));
+  // Step 3's tables: every producer replaces its rows each tick.
+  for (const spec of [OPENING, TYPED, FORMATTED, PAGED, PARTIAL, KEPT, HREF, PINNED, STICKY, LOOKS, LABELLED, CONTROLS, SPANNED, SOURCE, SOURCE_FULL, RESIZED, INERT, QUIET, TALL, TIPPED, BARE, ORDERED]) {
+    mount(spec, (s, node) => h(Table, { spec, node, heads: spec.heads, rows: spec.rows, gen: s.tick }));
+  }
+  // The plain table with the author's note under it, and the paged plain table: the script's note sits beside the
+  // table inside the root's own element, which is never replaced or unmounted.
+  mount(LOOKS_PLAIN, (s, node) => h(React.Fragment, null, h(Table, { spec: LOOKS_PLAIN, node, heads: LOOKS_PLAIN.heads, rows: LOOKS_PLAIN.rows, gen: s.tick }), h('div', { className: 'estate-table-note', id: 'looks-note' }, 'a plain line under a table outside any box')));
+  mount(NOTED, (s, node) => h(Table, { spec: NOTED, node, heads: NOTED.heads, rows: NOTED.rows, gen: s.tick }));
+  mount(DRAWN, () => h(DrawnTable));
+  mount(DRAWNFMT, (s, node) => h(Table, { spec: DRAWNFMT, node, heads: DRAWNFMT.heads, rows: DRAWNFMT.rows, gen: s.tick }));
+  // Rewrite: the two acts are state — Bob's balance a new string for the same keyed row; the header's class a new className.
+  state.rewrite = { cell: false, head: false };
+  document.getElementById('rewrite-cell').addEventListener('click', () => { state.rewrite = { ...state.rewrite, cell: true }; publish(); });
+  document.getElementById('rewrite-head').addEventListener('click', () => { state.rewrite = { ...state.rewrite, head: true }; publish(); });
+  mount(REWRITE, (s, node) => {
+    const heads = s.rewrite.head ? [REWRITE.heads[0], { t: 'Balance', c: 'estate-nowrap estate-num' }] : REWRITE.heads;
+    const rows = REWRITE.rows.map(r => r.k === 'bob' && s.rewrite.cell ? { ...r, cells: [r.cells[0], num('5')] } : r);
+    return h(Table, { spec: REWRITE, node, heads, rows, gen: 'r' });
+  });
+</script>
+</body>
+</html>

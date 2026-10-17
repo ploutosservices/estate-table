@@ -1,0 +1,39 @@
+{
+  "name": "@ploutosservices/estate-table",
+  "version": "1.4.0",
+  "description": "One look and one behaviour for plain HTML tables: a stylesheet and a small script — sort, filter, copy to a spreadsheet or an email. No framework, no build step.",
+  "license": "Apache-2.0",
+  "author": "Ploutos Services",
+  "keywords": [
+    "table",
+    "html-table",
+    "sort",
+    "filter",
+    "copy",
+    "css",
+    "vanilla-js",
+    "no-framework",
+    "react"
+  ],
+  "style": "table/estate-table.css",
+  "browser": "table/estate-table.js",
+  "files": [
+    "table/",
+    "icons/",
+    "SPEC.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://cdn.ploutos.xyz/estate/table/example.html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ploutosservices/estate-table.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ploutosservices/estate-table/issues"
+  }
+}
